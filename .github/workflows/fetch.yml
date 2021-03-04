@@ -1,0 +1,34 @@
+name: Fetch upstream
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  fetch:
+    name: Fetch upstream
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Git SVN
+        run: |
+          sudo apt install git-svn
+
+      - uses: actions/checkout@v2
+
+      - name: Update branches
+        run: |
+          echo "[svn-remote \"svn\"]" >> .git/config
+          echo "	url = svn://svn.code.sf.net/p/kolmafia/code" >> .git/config
+          echo "	fetch = :refs/remotes/git-svn" >> .git/config
+          git config user.name "GitHub Actions"
+          git config user.email "actions@users.noreply.github.com"
+          git fetch --all
+          git checkout sourceforge
+          git update-ref refs/remotes/git-svn refs/remotes/origin/sourceforge
+          git svn rebase
+          git push
+          git checkout main
+          git rebase sourceforge
+          git push -f
