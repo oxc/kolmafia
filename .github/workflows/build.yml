@@ -1,0 +1,52 @@
+name: Build JAR
+
+on:
+  push:
+    branches: ["sourceforge"]
+  workflow_dispatch:
+
+jobs:
+  daily:
+    name: Build daily
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install Git SVN
+        run: |
+          sudo apt install git-svn
+
+      - uses: actions/checkout@v2
+
+      - name: Update branches
+        run: |
+          echo "[svn-remote \"svn\"]" >> .git/config
+          echo "	url = svn://svn.code.sf.net/p/kolmafia/code" >> .git/config
+          echo "	fetch = :refs/remotes/git-svn" >> .git/config
+          git config user.name "GitHub Actions"
+          git config user.email "actions@users.noreply.github.com"
+          git fetch --all
+          git checkout sourceforge
+          git update-ref refs/remotes/git-svn refs/remotes/origin/sourceforge
+          git svn rebase
+
+      - name: Setup JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Build with ant
+        run: ant daily
+
+      - name: Retrieve version and tag
+        run: |
+          KOLMAFIA_VERSION=$(git svn info | grep '^Revision: [0-9]*$' | awk '{ print $2 }')
+          git tag "r$KOLMAFIA_VERSION"
+          echo "KOLMAFIA_VERSION=$KOLMAFIA_VERSION" >> $GITHUB_ENV
+
+      - uses: softprops/action-gh-release@v1
+        with:
+          files: dist/*.jar
+          tag_name: r${{ env.KOLMAFIA_VERSION }}
+          name: ${{ env.KOLMAFIA_VERSION }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
