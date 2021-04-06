@@ -1,4 +1,4 @@
-name: Build
+name: Build oxc
 
 on:
   push:
@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   bin:
-    if: github.repository == 'kolmafia/kolmafia'
+    if: github.repository == 'oxc/kolmafia'
     name: Build Binaries
     runs-on: ${{ matrix.os }}
     strategy:
@@ -21,6 +21,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/kolmafia/kolmafia
+          git fetch upstream
 
       - name: Setup Java 17
         uses: actions/setup-java@v3
@@ -35,7 +40,7 @@ jobs:
       - name: Build
         env:
           ORG_GRADLE_PROJECT_commit: ${{ github.sha }}
-        run: ./gradlew --no-daemon jpackage
+        run: ./gradlew --no-daemon jpackage --info
 
       - name: Upload binaries
         uses: actions/upload-artifact@v3
@@ -47,7 +52,7 @@ jobs:
             build/releases/*.dmg
 
   jar:
-    if: github.repository == 'kolmafia/kolmafia'
+    if: github.repository == 'oxc/kolmafia'
     name: Build Release
     runs-on: ubuntu-latest
 
@@ -56,6 +61,11 @@ jobs:
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/kolmafia/kolmafia
+          git fetch upstream
 
       - name: Setup Java 17
         uses: actions/setup-java@v3
@@ -80,7 +90,7 @@ jobs:
 
   release:
     needs: [bin, jar]
-    if: github.repository == 'kolmafia/kolmafia'
+    if: github.repository == 'oxc/kolmafia'
     name: Publish Artifacts
     runs-on: ubuntu-latest
     steps:
@@ -89,10 +99,17 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Add upstream remote
+        run: |
+          git remote add upstream https://github.com/kolmafia/kolmafia
+          git fetch upstream
+
       - name: Retrieve version and tag
         run: |
-          KOLMAFIA_VERSION=$(git rev-list --count $GITHUB_SHA)
-          git tag "r$KOLMAFIA_VERSION"
+          REVISION=$(git rev-list --count upstream/main)
+          PATCH_LEVEL=$(git rev-list --count upstream/main..)
+          KOLMAFIA_VERSION=$REVISION.$PATCH_LEVEL
+          git tag -f "r$KOLMAFIA_VERSION"
           echo "KOLMAFIA_VERSION=$KOLMAFIA_VERSION" >> $GITHUB_ENV
 
       - name: Download binaries
