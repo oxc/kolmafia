@@ -75,9 +75,9 @@ class RelayAgentTest {
 
   @ParameterizedTest
   @CsvSource({
-    "/KoLmafia/sideCommand?pwd=xxxx&cmd=echo hi,'HTTP/1.1 302 Found|Date: GMT|Server: KoLmafia r0|Location: /charpane.php'",
-    "/KoLmafia/sideCommand?cmd=echo hi,'HTTP/1.1 401 Unauthorized|Date: GMT|Server: KoLmafia r0|| '",
-    "/KoLmafia/sideCommand?pwd=yyy&cmd=echo hi,'HTTP/1.1 401 Unauthorized|Date: GMT|Server: KoLmafia r0|| '"
+    "/KoLmafia/sideCommand?pwd=xxxx&cmd=echo hi,'HTTP/1.1 302 Found|Date: GMT|Server: KoLmafia oxc r0|Location: /charpane.php'",
+    "/KoLmafia/sideCommand?cmd=echo hi,'HTTP/1.1 401 Unauthorized|Date: GMT|Server: KoLmafia oxc r0|| '",
+    "/KoLmafia/sideCommand?pwd=yyy&cmd=echo hi,'HTTP/1.1 401 Unauthorized|Date: GMT|Server: KoLmafia oxc r0|| '"
   })
   void performRelayWithHash(String url, String expectedString) throws IOException {
     var cleanups = withPasswordHash("xxxx");
