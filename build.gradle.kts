@@ -231,12 +231,11 @@ tasks.shadowJar {
 
 val revisionProvider: Provider<String> =
   providers.provider {
-    val commit = findProperty("commit")?.toString() ?: "HEAD"
     val rev =
       grgit
         .log {
-          includes = listOf(commit)
-        }.size - localCommits(commit)
+          includes = listOf("upstream/main")
+        }.size
 
     rev.toString()
   }
@@ -256,6 +255,19 @@ fun resolveGitDir(): File {
   }
 }
 
+val patchesProvider: Provider<String> =
+  providers.provider {
+    val commit = findProperty("commit")?.toString() ?: "HEAD"
+    val patches =
+      grgit
+        .log {
+          includes = listOf(commit)
+          excludes = listOf("upstream/main")
+        }.size - localCommits(commit)
+
+    patches.toString()
+  }
+
 tasks.register("getRevision") {
   onlyIf {
     file(".git").exists()
@@ -268,10 +280,12 @@ tasks.register("getRevision") {
 
   doLast {
     val revision = revisionProvider.get().trim()
-    logger.info("Commit: {} Revision: {}", commit, revision)
-    file("build/revision.txt").writeText(revision)
+    val patches = patchesProvider.get().trim()
+    val version = "$revision-oxc-$patches"
+    logger.info("Commit: {} Revision: {} Patches: {}", commit, revision, patches)
+    file("build/revision.txt").writeText(version)
     // Update the version to the new revision
-    project.version = revision
+    project.version = version
     val revString = if (isDirty()) "${project.version}-M" else project.version.toString()
     println("\nRevision: $revString")
   }
