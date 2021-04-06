@@ -202,11 +202,12 @@ task getRevision() {
 	outputs.files file('build/revision.txt')
 
 	doLast {
-		def revision = grgit.log(includes:[commit]).size()
-		logger.info('Commit: {} Revision: {}', commit, revision)
+		def revision = grgit.log(includes:['upstream/main']).size()
+		def patches = grgit.log(includes:[commit], excludes:['upstream/main']).size()
+		logger.info('Commit: {} Revision: {}, Patches: {}', commit, revision, patches)
 		file('build/revision.txt').text = revision.toString().trim()
 		// Update the version to the new revision
-		project.setVersion(revision.toString().trim())
+		project.setVersion("${revision.toString().trim()}-oxc-${patches}")
 		def revString = versioning.info.dirty ? project.getVersion() +'-M': project.getVersion()
 		println '\nRevision: ' + revString
 
@@ -284,7 +285,7 @@ tasks.jpackage {
 	}
 	doFirst {
 		mainJar = tasks.shadowJar.archiveFileName.get()
-		appVersion += '.' + version
+		appVersion += '.' + version.toString().takeBefore('-')
 		appName = 'KoLmafia-r' + version + "${versioning.info.dirty ? 'M' : ''}"
 		println 'Packaging app ' + appName + '...'
 		if (System.properties['os.name'] != 'Linux') {
