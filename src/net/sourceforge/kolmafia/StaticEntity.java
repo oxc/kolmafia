@@ -97,7 +97,7 @@ public abstract class StaticEntity
 			int revision = StaticEntity.getRevision();
 			if ( revision != 0 )
 			{
-				version += " r" + revision;
+				version += " r" + (KoLConstants.REVISION != null ? KoLConstants.REVISION : revision);
 			}
 		}
 		return version;
@@ -128,10 +128,15 @@ public abstract class StaticEntity
 		}
 
 		int colonIndex = KoLConstants.REVISION.indexOf( ":" );
+		int dashIndex = KoLConstants.REVISION.indexOf("-");
 		String revision = KoLConstants.REVISION;
-		if ( colonIndex != -1 )
+		if ( colonIndex != -1 || dashIndex != -1 )
 		{
-			revision = KoLConstants.REVISION.substring( 0, colonIndex );
+			int sepIndex = Math.min(
+					colonIndex != -1 ? colonIndex : Integer.MAX_VALUE,
+					dashIndex != -1 ? dashIndex : Integer.MAX_VALUE
+			);
+			revision = KoLConstants.REVISION.substring( 0, sepIndex );
 		}
 		else if ( KoLConstants.REVISION.endsWith( "M" ) )
 		{
