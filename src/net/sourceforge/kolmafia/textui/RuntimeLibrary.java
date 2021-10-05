@@ -191,6 +191,19 @@ import org.tmatesoft.svn.core.wc.SVNWCUtil;
 
 @SuppressWarnings("unused")
 public abstract class RuntimeLibrary {
+  private static final RecordType purchaseRequestRec =
+      new RecordType(
+          "{item item; int quantity; int price; int limit; int shopId; string shopName;}",
+          new String[] {"item", "quantity", "price", "limit", "shopId", "shopName"},
+          new Type[] {
+            DataTypes.ITEM_TYPE,
+            DataTypes.INT_TYPE,
+            DataTypes.INT_TYPE,
+            DataTypes.INT_TYPE,
+            DataTypes.INT_TYPE,
+            DataTypes.STRING_TYPE,
+          });
+
   private static final RecordType itemDropRec =
       new RecordType(
           "{item drop; int rate; string type;}",
@@ -1130,6 +1143,12 @@ public abstract class RuntimeLibrary {
 
     params = new Type[] {DataTypes.STRING_TYPE, DataTypes.STRING_TYPE};
     functions.add(new LibraryFunction("mall_prices", DataTypes.INT_TYPE, params));
+
+    params = new Type[] {DataTypes.ITEM_TYPE};
+    functions.add(new LibraryFunction("search_mall", DataTypes.AGGREGATE_TYPE, params));
+
+    params = new Type[] {DataTypes.ITEM_TYPE, DataTypes.INT_TYPE};
+    functions.add(new LibraryFunction("search_mall", DataTypes.AGGREGATE_TYPE, params));
 
     params = new Type[] {DataTypes.STRING_TYPE, DataTypes.INT_TYPE, DataTypes.INT_TYPE};
     functions.add(new LibraryFunction("well_stocked", DataTypes.BOOLEAN_TYPE, params));
@@ -5419,6 +5438,37 @@ public abstract class RuntimeLibrary {
   public static Value mall_prices(
       ScriptRuntime controller, final Value category, final Value tiers) {
     return new Value(MallPriceManager.getMallPrices(category.toString(), tiers.toString()));
+  }
+
+  public static Value search_mall(ScriptRuntime controller, final Value item) {
+    return search_mall(controller, item, new Value(0));
+  }
+
+  public static Value search_mall(ScriptRuntime controller, final Value item, final Value count) {
+    List<PurchaseRequest> searchResults =
+        MallPriceManager.searchMall(ItemPool.get((int) item.intValue(), (int) count.intValue()));
+
+    AggregateType type = new AggregateType(purchaseRequestRec, searchResults.size());
+    ArrayValue value = new ArrayValue(type);
+
+    for (int i = 0, searchResultsSize = searchResults.size(); i < searchResultsSize; i++) {
+      PurchaseRequest searchResult = searchResults.get(i);
+      if (!(searchResult instanceof MallPurchaseRequest mallEntry)) {
+        throw controller.runtimeException("Non-mall purchase request in mall search results");
+      }
+
+      RecordValue result = new RecordValue(purchaseRequestRec);
+      result.aset(0, DataTypes.makeItemValue(mallEntry.getItem()), null);
+      result.aset(1, DataTypes.makeIntValue(mallEntry.getQuantity()), null);
+      result.aset(2, DataTypes.makeIntValue(mallEntry.getPrice()), null);
+      result.aset(3, DataTypes.makeIntValue(mallEntry.getLimit()), null);
+      result.aset(4, DataTypes.makeIntValue(mallEntry.getShopId()), null);
+      result.aset(5, DataTypes.makeStringValue(mallEntry.getShopName()), null);
+
+      value.aset(new Value(i), result);
+    }
+
+    return value;
   }
 
   public static Value well_stocked(
