@@ -100,6 +100,7 @@ import net.sourceforge.kolmafia.objectpool.EffectPool;
 import net.sourceforge.kolmafia.objectpool.FamiliarPool;
 import net.sourceforge.kolmafia.objectpool.ItemPool;
 import net.sourceforge.kolmafia.objectpool.SkillPool;
+import net.sourceforge.kolmafia.oxc.BuffooneryHttpClient;
 import net.sourceforge.kolmafia.persistence.AdventureDatabase;
 import net.sourceforge.kolmafia.persistence.AdventureSpentDatabase;
 import net.sourceforge.kolmafia.persistence.CandyDatabase;
@@ -227,6 +228,12 @@ import org.tmatesoft.svn.core.wc.SVNWCUtil;
 
 @SuppressWarnings({"incomplete-switch", "unused"})
 public abstract class RuntimeLibrary {
+  private static final RecordType buffooneryResponseRec =
+      new RecordType(
+          "{int code; string body;}",
+          new String[] {"code", "body"},
+          new Type[] {DataTypes.INT_TYPE, DataTypes.STRING_TYPE});
+
   private static final RecordType channelMessageRec =
       new RecordType(
           "{int timestamp; string event; string params;}",
@@ -514,6 +521,23 @@ public abstract class RuntimeLibrary {
             "form_fields",
             new AggregateType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE),
             params));
+
+    params =
+        List.of(
+            namedParam("httpMethod", DataTypes.STRING_TYPE),
+            namedParam("httpPath", DataTypes.STRING_TYPE),
+            namedParam("query", DataTypes.STRING_TYPE),
+            namedParam("timeout", DataTypes.INT_TYPE));
+    functions.add(new LibraryFunction("buffoonery_make_request", DataTypes.AGGREGATE_TYPE, params));
+
+    params =
+        List.of(
+            namedParam("httpMethod", DataTypes.STRING_TYPE),
+            namedParam("httpPath", DataTypes.STRING_TYPE),
+            namedParam("query", DataTypes.STRING_TYPE),
+            namedParam("body", DataTypes.STRING_TYPE),
+            namedParam("timeout", DataTypes.INT_TYPE));
+    functions.add(new LibraryFunction("buffoonery_make_request", DataTypes.AGGREGATE_TYPE, params));
 
     params =
         List.of(
@@ -4403,6 +4427,42 @@ public abstract class RuntimeLibrary {
     }
 
     return value;
+  }
+
+  public static Value buffoonery_make_request(
+      ScriptRuntime controller,
+      final Value httpMethod,
+      final Value httpPath,
+      final Value query,
+      final Value timeout) {
+    return buffoonery_make_request(controller, httpMethod, httpPath, query, new Value(""), timeout);
+  }
+
+  public static Value buffoonery_make_request(
+      ScriptRuntime controller,
+      final Value httpMethod,
+      final Value httpPath,
+      final Value query,
+      final Value body,
+      final Value timeout) {
+    try {
+      var response =
+          BuffooneryHttpClient.INSTANCE.makeRequest(
+              httpMethod.contentString,
+              httpPath.contentString,
+              query.contentString,
+              body.contentString,
+              timeout.intValue());
+
+      var result = new RecordValue(buffooneryResponseRec);
+      result.aset(0, DataTypes.makeIntValue(response.getCode()), null);
+      result.aset(1, DataTypes.makeStringValue(response.getBody()), null);
+
+      return result;
+    } catch (Exception e) {
+      throw controller.runtimeException2(
+          "Error making buffoonery REST call to " + httpPath.contentString + ":", e.getMessage());
+    }
   }
 
   public static Value spawn_thread(
