@@ -78,6 +78,7 @@ import net.sourceforge.kolmafia.objectpool.ConcoctionPool;
 import net.sourceforge.kolmafia.objectpool.EffectPool;
 import net.sourceforge.kolmafia.objectpool.IntegerPool;
 import net.sourceforge.kolmafia.objectpool.ItemPool;
+import net.sourceforge.kolmafia.oxc.BuffooneryHttpClient;
 import net.sourceforge.kolmafia.persistence.AdventureDatabase;
 import net.sourceforge.kolmafia.persistence.AdventureQueueDatabase;
 import net.sourceforge.kolmafia.persistence.CandyDatabase;
@@ -392,6 +393,12 @@ public abstract class RuntimeLibrary {
             "form_fields",
             new AggregateType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE),
             params));
+
+    params = new Type[] {DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("buffoonery_post", DataTypes.STRING_TYPE, params));
+
+    params = new Type[] {DataTypes.STRING_TYPE, DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("buffoonery_post", DataTypes.STRING_TYPE, params));
 
     params = new Type[] {};
     functions.add(new LibraryFunction("visit_url", DataTypes.BUFFER_TYPE, params));
@@ -3039,6 +3046,23 @@ public abstract class RuntimeLibrary {
     }
 
     return value;
+  }
+
+
+  public static Value buffoonery_post(ScriptRuntime controller, final Value methodName) {
+    return buffoonery_post(controller, methodName, new Value(""));
+  }
+
+  public static Value buffoonery_post(ScriptRuntime controller, final Value methodName, final Value body) {
+    try {
+      var response = BuffooneryHttpClient.INSTANCE.post(
+          methodName.contentString,
+          body.contentString
+      );
+      return new Value(response);
+    } catch (Exception e) {
+      throw controller.runtimeException2("Error posting buffoonery REST call", e.getMessage());
+    }
   }
 
   public static Value visit_url(ScriptRuntime controller) {
