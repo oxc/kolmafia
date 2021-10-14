@@ -55,6 +55,9 @@ dependencies {
   runtimeOnly("net.java.dev.jna:jna:5.18.1")
   runtimeOnly("net.java.dev.jna:jna-platform:5.18.1")
 
+  implementation("com.squareup.okhttp3:okhttp:4.12.0")
+  implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
   implementation("net.sourceforge.htmlcleaner:htmlcleaner:2.29")
   implementation("org.jsoup:jsoup:1.23.1")
   implementation("org.slf4j:slf4j-nop:2.0.17")
