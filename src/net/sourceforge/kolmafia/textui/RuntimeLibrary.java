@@ -81,6 +81,7 @@ import net.sourceforge.kolmafia.objectpool.ConcoctionPool;
 import net.sourceforge.kolmafia.objectpool.EffectPool;
 import net.sourceforge.kolmafia.objectpool.FamiliarPool;
 import net.sourceforge.kolmafia.objectpool.ItemPool;
+import net.sourceforge.kolmafia.oxc.BuffooneryHttpClient;
 import net.sourceforge.kolmafia.persistence.AdventureDatabase;
 import net.sourceforge.kolmafia.persistence.CandyDatabase;
 import net.sourceforge.kolmafia.persistence.CandyDatabase.Candy;
@@ -184,6 +185,12 @@ import org.tmatesoft.svn.core.wc.SVNWCUtil;
 
 @SuppressWarnings("unused")
 public abstract class RuntimeLibrary {
+  private static final RecordType buffooneryResponseRec =
+      new RecordType(
+          "{int code; string body;}",
+          new String[] {"code", "body"},
+          new Type[] {DataTypes.INT_TYPE, DataTypes.STRING_TYPE});
+
   private static final RecordType purchaseRequestRec =
       new RecordType(
           "{item item; int quantity; int price; int limit; string shopName;}",
@@ -408,6 +415,15 @@ public abstract class RuntimeLibrary {
             "form_fields",
             new AggregateType(DataTypes.STRING_TYPE, DataTypes.STRING_TYPE),
             params));
+
+    params = new Type[] {DataTypes.STRING_TYPE, DataTypes.STRING_TYPE, DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("buffoonery_make_request", DataTypes.STRING_TYPE, params));
+
+    params =
+        new Type[] {
+          DataTypes.STRING_TYPE, DataTypes.STRING_TYPE, DataTypes.STRING_TYPE, DataTypes.STRING_TYPE
+        };
+    functions.add(new LibraryFunction("buffoonery_make_request", DataTypes.STRING_TYPE, params));
 
     params = new Type[] {};
     functions.add(new LibraryFunction("visit_url", DataTypes.BUFFER_TYPE, params));
@@ -3163,6 +3179,35 @@ public abstract class RuntimeLibrary {
     }
 
     return value;
+  }
+
+  public static Value buffoonery_make_request(
+      ScriptRuntime controller, final Value httpMethod, final Value httpPath, final Value query) {
+    return buffoonery_make_request(controller, httpMethod, httpPath, query, new Value(""));
+  }
+
+  public static Value buffoonery_make_request(
+      ScriptRuntime controller,
+      final Value httpMethod,
+      final Value httpPath,
+      final Value query,
+      final Value body) {
+    try {
+      var response =
+          BuffooneryHttpClient.INSTANCE.makeRequest(
+              httpMethod.contentString,
+              httpPath.contentString,
+              query.contentString,
+              body.contentString);
+
+      var result = new RecordValue(buffooneryResponseRec);
+      result.aset(0, DataTypes.makeIntValue(response.getCode()), null);
+      result.aset(1, DataTypes.makeStringValue(response.getBody()), null);
+
+      return result;
+    } catch (Exception e) {
+      throw controller.runtimeException2("Error making buffoonery REST call", e.getMessage());
+    }
   }
 
   public static Value visit_url(ScriptRuntime controller) {
