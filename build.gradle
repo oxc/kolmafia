@@ -73,6 +73,8 @@ dependencies {
 		builtBy 'compileLibJava'
 	}
 
+	implementation("com.squareup.okhttp3:okhttp:4.9.1")
+
 	implementation 'net.sourceforge.htmlcleaner:htmlcleaner:2.24'
 	implementation 'org.fusesource.jansi:jansi:2.3.4'
 	implementation 'org.json:json:20210307'
