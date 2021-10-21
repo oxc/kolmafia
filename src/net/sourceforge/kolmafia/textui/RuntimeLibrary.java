@@ -61,6 +61,7 @@ import net.sourceforge.kolmafia.RequestThread;
 import net.sourceforge.kolmafia.SpecialOutfit;
 import net.sourceforge.kolmafia.StaticEntity;
 import net.sourceforge.kolmafia.VYKEACompanionData;
+import net.sourceforge.kolmafia.chat.ChatManager;
 import net.sourceforge.kolmafia.chat.ChatMessage;
 import net.sourceforge.kolmafia.chat.ChatPoller;
 import net.sourceforge.kolmafia.chat.ChatSender;
@@ -1875,6 +1876,12 @@ public abstract class RuntimeLibrary {
 
     params = new Type[] {DataTypes.ITEM_TYPE};
     functions.add(new LibraryFunction("slash_count", DataTypes.INT_TYPE, params));
+
+    params = new Type[] {};
+    functions.add(new LibraryFunction("start_chat", DataTypes.VOID_TYPE, params));
+
+    params = new Type[] {};
+    functions.add(new LibraryFunction("stop_chat", DataTypes.VOID_TYPE, params));
 
     params = new Type[] {DataTypes.STRING_TYPE};
     functions.add(new LibraryFunction("chat_macro", DataTypes.VOID_TYPE, params));
@@ -7304,6 +7311,18 @@ public abstract class RuntimeLibrary {
     RequestThread.postRequest(request);
     Matcher m = RuntimeLibrary.COUNT_PATTERN.matcher(request.responseText);
     return new Value(m.find() ? StringUtilities.parseInt(m.group(1)) : 0);
+  }
+
+  public static Value start_chat(ScriptRuntime controller) {
+    ChatManager.initialize();
+
+    return DataTypes.VOID_VALUE;
+  }
+
+  public static Value stop_chat(ScriptRuntime controller) {
+    ChatManager.dispose();
+
+    return DataTypes.VOID_VALUE;
   }
 
   public static Value chat_macro(ScriptRuntime controller, final Value macroValue) {
