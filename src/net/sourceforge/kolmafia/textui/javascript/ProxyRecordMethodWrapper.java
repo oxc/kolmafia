@@ -41,7 +41,7 @@ public class ProxyRecordMethodWrapper extends BaseFunction {
       }
 
       if (returnValue instanceof NativeJavaObject) {
-        throw new ScriptException("ASH function returned native Java object.");
+        throw new ScriptException("ASH function " + method + " returned native Java object.");
       }
 
       return returnValue;
