@@ -89,7 +89,8 @@ public abstract class AshStub extends BaseFunction {
     }
 
     if (returnValue instanceof NativeJavaObject) {
-      throw controller.runtimeException("ASH function returned native Java object.");
+      throw controller.runtimeException(
+          "ASH function" + ashFunctionName + " returned native Java object.");
     }
 
     return returnValue;
