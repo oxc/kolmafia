@@ -2,6 +2,7 @@ package net.sourceforge.kolmafia.textui.javascript;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import net.sourceforge.kolmafia.RequestLogger;
 import net.sourceforge.kolmafia.textui.ScriptException;
 import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
@@ -28,11 +29,14 @@ public class ProxyRecordMethodWrapper extends BaseFunction {
 
     try {
       Object returnValue = method.invoke(((EnumeratedWrapper) thisObj).getWrapped().asProxy());
+      RequestLogger.printLine("return value: " + returnValue);
 
       if (returnValue instanceof Value
           && ((Value) returnValue).asProxy() instanceof ProxyRecordValue) {
+        RequestLogger.printLine("return value is a proxy record");
         returnValue = EnumeratedWrapper.wrap(scope, returnValue.getClass(), (Value) returnValue);
       } else if (!(returnValue instanceof Scriptable)) {
+        RequestLogger.printLine("return value is not a scriptable");
         returnValue = Context.javaToJS(returnValue, scope);
       }
 
