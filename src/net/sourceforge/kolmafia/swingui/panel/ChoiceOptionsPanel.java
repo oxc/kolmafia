@@ -28,7 +28,7 @@ import net.sourceforge.kolmafia.listener.PreferenceListenerRegistry;
 import net.sourceforge.kolmafia.preferences.Preferences;
 import net.sourceforge.kolmafia.session.ChoiceAdventures;
 import net.sourceforge.kolmafia.session.ChoiceAdventures.ChoiceAdventure;
-import net.sourceforge.kolmafia.session.ChoiceAdventures.Option;
+import net.sourceforge.kolmafia.session.Option;
 import net.sourceforge.kolmafia.session.LouvreManager;
 import net.sourceforge.kolmafia.session.OceanManager.Destination;
 import net.sourceforge.kolmafia.session.OceanManager.Point;
