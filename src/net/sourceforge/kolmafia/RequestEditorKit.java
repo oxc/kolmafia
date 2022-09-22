@@ -64,6 +64,7 @@ import net.sourceforge.kolmafia.session.IslandManager;
 import net.sourceforge.kolmafia.session.LimitMode;
 import net.sourceforge.kolmafia.session.NemesisManager;
 import net.sourceforge.kolmafia.session.OceanManager;
+import net.sourceforge.kolmafia.session.Option;
 import net.sourceforge.kolmafia.session.RabbitHoleManager;
 import net.sourceforge.kolmafia.session.TavernManager;
 import net.sourceforge.kolmafia.session.VolcanoMazeManager;
@@ -1857,7 +1858,7 @@ public class RequestEditorKit extends HTMLEditorKit {
 
     if (spoilers == null) {
       // Don't give up - there may be a choice even if there are no spoilers.
-      spoilers = new Spoilers(choice, "", new ChoiceAdventures.Option[0]);
+      spoilers = new Spoilers(choice, "", new Option[0]);
     }
 
     int index1 = matcher.start();
@@ -1896,8 +1897,7 @@ public class RequestEditorKit extends HTMLEditorKit {
       // Build spoiler text
       while (i > 0) {
         // Say what the choice will give you
-        ChoiceAdventures.Option spoiler =
-            ChoiceAdventures.choiceSpoiler(choice, i, spoilers.getOptions());
+        Option spoiler = ChoiceAdventures.choiceSpoiler(choice, i, spoilers.getOptions());
 
         // If we have nothing to say about this option, don't say anything
         if (spoiler == null) {
