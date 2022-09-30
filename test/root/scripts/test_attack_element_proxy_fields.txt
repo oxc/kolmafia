@@ -4,3 +4,9 @@ ash $monster[Knott Yeti].attack_element
 ash $monster[Knott Yeti].attack_elements
 ash $monster[lihc].attack_element
 ash $monster[lihc].attack_elements
+js Monster.get('warwelf').attackElement
+js Monster.get('warwelf').attackElements
+js Monster.get('Knott Yeti').attackElement
+js Monster.get('Knott Yeti').attackElements
+js Monster.get('lihc').attackElement
+js Monster.get('lihc').attackElements
