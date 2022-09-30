@@ -11,3 +11,16 @@ image => skull.gif
 Returned: aggregate boolean [element]
 sleaze => true
 spooky => true
+Returned: none
+image => circle.gif
+Returned: aggregate element [1]
+0 => none
+Returned: cold
+image => snowflake.gif
+Returned: aggregate element [1]
+0 => cold
+Returned: spooky
+image => skull.gif
+Returned: aggregate element [2]
+0 => sleaze
+1 => spooky
