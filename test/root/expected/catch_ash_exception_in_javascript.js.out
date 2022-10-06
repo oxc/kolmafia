@@ -1,1 +1,1 @@
-Script exception: Can't get session logs for a negative number of days (file:%%ROOT%%/scripts/catch_ash_exception_in_javascript.js#4)
+Caught exception: JavaException: net.sourceforge.kolmafia.textui.ScriptException: Can't get session logs for a negative number of days (file:%%ROOT%%/scripts/catch_ash_exception_in_javascript.js#4)
