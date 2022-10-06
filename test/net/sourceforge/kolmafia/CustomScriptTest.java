@@ -67,7 +67,12 @@ public class CustomScriptTest {
       RequestLogger.closeCustom();
     }
 
-    String output = ostream.toString().trim();
+    String output =
+        ostream
+            .toString()
+            .trim()
+            // try to prevent absolute paths in the output
+            .replace(KoLConstants.ROOT_LOCATION.getAbsolutePath(), "%%ROOT%%");
     assertEquals(expectedOutput, output, script + " output does not match: ");
   }
 
