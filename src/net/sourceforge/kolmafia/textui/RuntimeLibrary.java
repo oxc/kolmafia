@@ -229,6 +229,12 @@ public abstract class RuntimeLibrary {
           new String[] {"code", "body"},
           new Type[] {DataTypes.INT_TYPE, DataTypes.STRING_TYPE});
 
+  private static final RecordType buffooneryCastBuffResponseRec =
+      new RecordType(
+          "{int turnsCast; string responseText;}",
+          new String[] {"turnsCast", "responseText"},
+          new Type[] {DataTypes.INT_TYPE, DataTypes.STRING_TYPE});
+
   private static final RecordType channelMessageRec =
       new RecordType(
           "{int timestamp; string event; string params;}",
@@ -533,6 +539,13 @@ public abstract class RuntimeLibrary {
             namedParam("body", DataTypes.STRING_TYPE),
             namedParam("timeout", DataTypes.INT_TYPE));
     functions.add(new LibraryFunction("buffoonery_make_request", DataTypes.AGGREGATE_TYPE, params));
+
+    params =
+        List.of(
+            namedParam("skill", DataTypes.SKILL_TYPE),
+            namedParam("count", DataTypes.INT_TYPE),
+            namedParam("targetPlayerId", DataTypes.INT_TYPE));
+    functions.add(new LibraryFunction("buffoonery_cast_buff", DataTypes.AGGREGATE_TYPE, params));
 
     params =
         List.of(
@@ -4269,6 +4282,22 @@ public abstract class RuntimeLibrary {
       throw controller.runtimeException2(
           "Error making buffoonery REST call to " + httpPath.contentString + ":", e.getMessage());
     }
+  }
+
+  public static Value buffoonery_cast_buff(
+      ScriptRuntime controller, final Value skill, final Value count, final Value target) {
+    int skillId = (int) skill.intValue();
+    int casts = (int) count.intValue();
+
+    var request = CastBuffRequest.getInstance(skillId, target.toString(), casts);
+
+    request.run();
+
+    var result = new RecordValue(buffooneryCastBuffResponseRec);
+    result.aset(0, DataTypes.makeIntValue(request.getTurnsCast()), null);
+    result.aset(1, DataTypes.makeStringValue(request.getResultText()), null);
+
+    return result;
   }
 
   public static Value spawn_thread(
