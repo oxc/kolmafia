@@ -194,6 +194,12 @@ public abstract class RuntimeLibrary {
           new String[] {"code", "body"},
           new Type[] {DataTypes.INT_TYPE, DataTypes.STRING_TYPE});
 
+  private static final RecordType buffooneryCastBuffResponseRec =
+      new RecordType(
+          "{boolean success; string responseText; string kolmafiaMessage;}",
+          new String[] {"success", "responseText", "kolmafiaMessage"},
+          new Type[] {DataTypes.BOOLEAN_TYPE, DataTypes.STRING_TYPE, DataTypes.STRING_TYPE});
+
   private static final RecordType purchaseRequestRec =
       new RecordType(
           "{item item; int quantity; int price; int limit; string shopName;}",
@@ -443,6 +449,9 @@ public abstract class RuntimeLibrary {
           DataTypes.INT_TYPE
         };
     functions.add(new LibraryFunction("buffoonery_make_request", DataTypes.AGGREGATE_TYPE, params));
+
+    params = new Type[] {DataTypes.SKILL_TYPE, DataTypes.INT_TYPE, DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("buffoonery_cast_buff", DataTypes.AGGREGATE_TYPE, params));
 
     params = new Type[] {};
     functions.add(new LibraryFunction("visit_url", DataTypes.BUFFER_TYPE, params));
@@ -3289,6 +3298,23 @@ public abstract class RuntimeLibrary {
     } catch (Exception e) {
       throw controller.runtimeException2("Error making buffoonery REST call", e.getMessage());
     }
+  }
+
+  public static Value buffoonery_cast_buff(
+      ScriptRuntime controller, final Value skill, final Value count, final Value target) {
+    int skillId = (int) skill.intValue();
+    int casts = (int) count.intValue();
+
+    UseSkillRequest request = UseSkillRequest.getInstance(skillId, target.toString(), casts);
+
+    request.run();
+
+    var result = new RecordValue(buffooneryCastBuffResponseRec);
+    result.aset(0, DataTypes.makeBooleanValue(UseSkillRequest.lastUpdate.equals("")), null);
+    result.aset(1, DataTypes.makeStringValue(request.responseText), null);
+    result.aset(2, DataTypes.makeStringValue(UseSkillRequest.lastUpdate), null);
+
+    return result;
   }
 
   public static Value visit_url(ScriptRuntime controller) {
