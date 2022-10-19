@@ -18,6 +18,7 @@ import net.sourceforge.kolmafia.chat.InternalMessage;
 import net.sourceforge.kolmafia.preferences.Preferences;
 import net.sourceforge.kolmafia.request.GenericRequest;
 import net.sourceforge.kolmafia.swingui.SystemTrayFrame;
+import net.sourceforge.kolmafia.textui.ScriptThread;
 import net.sourceforge.kolmafia.textui.javascript.JavascriptRuntime;
 import net.sourceforge.kolmafia.utilities.PauseObject;
 
@@ -318,6 +319,7 @@ public abstract class RequestThread {
     KoLmafia.updateDisplay(MafiaState.ABORT, "KoLmafia declares world peace.");
     KoLmafiaASH.stopAllRelayInterpreters();
     JavascriptRuntime.interruptAll();
+    ScriptThread.stopAll();
     InternalMessage message = new InternalMessage("KoLmafia declares world peace.", "red");
     ChatManager.broadcastEvent(message);
   }
