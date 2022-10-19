@@ -17,6 +17,7 @@ import net.sourceforge.kolmafia.chat.InternalMessage;
 import net.sourceforge.kolmafia.objectpool.FamiliarPool;
 import net.sourceforge.kolmafia.preferences.Preferences;
 import net.sourceforge.kolmafia.request.GenericRequest;
+import net.sourceforge.kolmafia.textui.ScriptThread;
 import net.sourceforge.kolmafia.textui.javascript.JavascriptRuntime;
 import net.sourceforge.kolmafia.ui.UserInterfaceManager;
 import net.sourceforge.kolmafia.utilities.PauseObject;
@@ -324,6 +325,7 @@ public abstract class RequestThread {
     KoLmafia.updateDisplay(MafiaState.ABORT, messageText);
     KoLmafiaASH.stopAllRelayInterpreters();
     JavascriptRuntime.interruptAll();
+    ScriptThread.stopAll();
     InternalMessage message = new InternalMessage(messageText, "red");
     ChatManager.broadcastEvent(message);
   }
