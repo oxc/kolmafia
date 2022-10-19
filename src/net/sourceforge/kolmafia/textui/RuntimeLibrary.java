@@ -10,6 +10,7 @@ import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -154,6 +156,7 @@ import net.sourceforge.kolmafia.session.VotingBoothManager;
 import net.sourceforge.kolmafia.swingui.SystemTrayFrame;
 import net.sourceforge.kolmafia.swingui.widget.InterruptableDialog;
 import net.sourceforge.kolmafia.textui.AshRuntime.CallFrame;
+import net.sourceforge.kolmafia.textui.MessageChannel.Message;
 import net.sourceforge.kolmafia.textui.command.ColdMedicineCabinetCommand;
 import net.sourceforge.kolmafia.textui.command.ConditionalStatement;
 import net.sourceforge.kolmafia.textui.command.EudoraCommand;
@@ -200,6 +203,12 @@ public abstract class RuntimeLibrary {
           "{int turnsCast; string responseText;}",
           new String[] {"turnsCast", "responseText"},
           new Type[] {DataTypes.INT_TYPE, DataTypes.STRING_TYPE});
+
+  private static final RecordType channelMessageRec =
+      new RecordType(
+          "{string event; string params;}",
+          new String[] {"event", "params"},
+          new Type[] {DataTypes.STRING_TYPE, DataTypes.STRING_TYPE});
 
   private static final RecordType purchaseRequestRec =
       new RecordType(
@@ -453,6 +462,30 @@ public abstract class RuntimeLibrary {
 
     params = new Type[] {DataTypes.SKILL_TYPE, DataTypes.INT_TYPE, DataTypes.STRING_TYPE};
     functions.add(new LibraryFunction("buffoonery_cast_buff", DataTypes.AGGREGATE_TYPE, params));
+
+    params = new Type[] {DataTypes.STRING_TYPE, DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("spawn_thread", DataTypes.VOID_TYPE, params));
+
+    params =
+        new Type[] {
+          DataTypes.STRING_TYPE,
+          DataTypes.STRING_TYPE,
+          DataTypes.STRING_TYPE,
+          DataTypes.AGGREGATE_TYPE
+        };
+    functions.add(new LibraryFunction("spawn_thread", DataTypes.VOID_TYPE, params));
+
+    params = new Type[] {DataTypes.STRING_TYPE, DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("post_message", DataTypes.VOID_TYPE, params));
+
+    params = new Type[] {DataTypes.STRING_TYPE, DataTypes.STRING_TYPE, DataTypes.ANY_TYPE};
+    functions.add(new LibraryFunction("post_message", DataTypes.VOID_TYPE, params));
+
+    params = new Type[] {DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("poll_message", DataTypes.AGGREGATE_TYPE, params));
+
+    params = new Type[] {DataTypes.STRING_TYPE, DataTypes.INT_TYPE};
+    functions.add(new LibraryFunction("poll_message", DataTypes.AGGREGATE_TYPE, params));
 
     params = new Type[] {};
     functions.add(new LibraryFunction("visit_url", DataTypes.BUFFER_TYPE, params));
@@ -3319,6 +3352,69 @@ public abstract class RuntimeLibrary {
     result.aset(0, DataTypes.makeIntValue(request.getTurnsCast()), null);
     result.aset(1, DataTypes.makeStringValue(request.getResultText()), null);
 
+    return result;
+  }
+
+  public static Value spawn_thread(
+      ScriptRuntime controller, final Value threadName, final Value scriptName) {
+    return spawn_thread(controller, threadName, scriptName, new Value("main"), null);
+  }
+
+  public static Value spawn_thread(
+      ScriptRuntime controller,
+      final Value threadName,
+      final Value scriptName,
+      final Value functionName,
+      final Value scriptParameters) {
+    Object[] parameters = null;
+    if (scriptParameters != null) {
+      ArrayValue aggregate = (ArrayValue) scriptParameters;
+      parameters = Arrays.copyOf((Object[]) scriptParameters.content, Integer.MAX_VALUE);
+    }
+    var paramValues = (AggregateValue) scriptParameters;
+    var thread =
+        ScriptThread.getOrCreateScriptThread(
+            threadName.toString(), scriptName.toString(), functionName.toString(), parameters);
+    if (thread == null) {
+      throw controller.runtimeException("Unable to create script thread");
+    }
+    thread.startIfNotRunning();
+    return DataTypes.VOID_VALUE;
+  }
+
+  public static Value post_message(
+      ScriptRuntime controller, final Value channelName, final Value event) {
+    return post_message(controller, channelName, event, null);
+  }
+
+  public static Value post_message(
+      ScriptRuntime controller, final Value channelName, final Value event, final Value params) {
+    MessageChannel.getChannel(channelName.toString())
+        .postMessage(new Message(event.toString(), params.toJSON()));
+    return DataTypes.VOID_VALUE;
+  }
+
+  public static Value poll_message(ScriptRuntime controller, final Value channelName)
+      throws InterruptedException {
+    return poll_message(controller, channelName, new Value(0));
+  }
+
+  public static Value poll_message(
+      ScriptRuntime controller, Value channelName, Value timeoutMillis)
+      throws InterruptedException {
+    var channel = MessageChannel.getChannel(channelName.toString());
+    var timeout = timeoutMillis.intValue();
+    var message =
+        timeout <= 0
+            ? channel.pollMessage()
+            : channel.pollMessage(timeoutMillis.intValue(), TimeUnit.MILLISECONDS);
+
+    if (message == null) {
+      return DataTypes.VOID_VALUE;
+    }
+    var result = new RecordValue(channelMessageRec);
+    result.aset(0, DataTypes.makeStringValue(message.event), null);
+    result.aset(1, DataTypes.makeStringValue(message.data.toString()), null);
     return result;
   }
 
