@@ -873,6 +873,18 @@ public abstract class RuntimeLibrary {
     params = new Type[] {DataTypes.INT_TYPE, DataTypes.ITEM_TYPE};
     functions.add(new LibraryFunction("chew", DataTypes.BOOLEAN_TYPE, params));
 
+    params = new Type[] {DataTypes.ITEM_TYPE, DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("curse", DataTypes.BOOLEAN_TYPE, params));
+
+    params = new Type[] {DataTypes.ITEM_TYPE, DataTypes.STRING_TYPE, DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("curse", DataTypes.BOOLEAN_TYPE, params));
+
+    params =
+        new Type[] {
+          DataTypes.INT_TYPE, DataTypes.ITEM_TYPE, DataTypes.STRING_TYPE, DataTypes.STRING_TYPE
+        };
+    functions.add(new LibraryFunction("curse", DataTypes.BOOLEAN_TYPE, params));
+
     params = new Type[] {};
     functions.add(new LibraryFunction("last_item_message", DataTypes.STRING_TYPE, params));
 
@@ -4355,6 +4367,34 @@ public abstract class RuntimeLibrary {
 
   public static Value chew(ScriptRuntime controller, final Value arg1, final Value arg2) {
     return execute_item_quantity("chew", arg1, arg2);
+  }
+
+  public static Value curse(ScriptRuntime controller, final Value itemId, final Value target) {
+    return curse(controller, itemId, target, new Value(""));
+  }
+
+  public static Value curse(
+      ScriptRuntime controller, final Value itemId, final Value target, final Value message) {
+    return curse(controller, DataTypes.ONE_VALUE, itemId, target, message);
+  }
+
+  public static Value curse(
+      ScriptRuntime controller,
+      final Value quantity,
+      final Value itemId,
+      final Value target,
+      final Value message) {
+
+    AdventureResult item = ItemPool.get((int) itemId.intValue(), (int) quantity.intValue());
+    if (!ItemDatabase.getAttribute(item.getItemId(), ItemDatabase.ATTR_CURSE)) {
+      throw controller.runtimeException("The " + item.getName() + " cannot be used for cursing.");
+    }
+
+    CurseRequest request = new CurseRequest(item, target.toString(), message.toString());
+
+    RequestThread.postRequest(request);
+
+    return RuntimeLibrary.continueValue();
   }
 
   public static Value last_item_message(ScriptRuntime controller) {
