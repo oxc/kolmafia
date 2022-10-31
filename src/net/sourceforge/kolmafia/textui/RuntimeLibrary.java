@@ -484,6 +484,9 @@ public abstract class RuntimeLibrary {
     params = new Type[] {DataTypes.SKILL_TYPE, DataTypes.INT_TYPE, DataTypes.STRING_TYPE};
     functions.add(new LibraryFunction("buffoonery_cast_buff", DataTypes.AGGREGATE_TYPE, params));
 
+    params = new Type[] {DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("buffoonery_poll_chat", DataTypes.STRING_TYPE, params));
+
     params = new Type[] {DataTypes.STRING_TYPE, DataTypes.STRING_TYPE};
     functions.add(new LibraryFunction("spawn_thread", DataTypes.VOID_TYPE, params));
 
@@ -3445,6 +3448,14 @@ public abstract class RuntimeLibrary {
     result.aset(1, DataTypes.makeStringValue(request.getResultText()), null);
 
     return result;
+  }
+
+  public static Value buffoonery_poll_chat(ScriptRuntime controller, final Value lastSeen) {
+    var chatRequest = new ChatRequest(lastSeen.contentString, true, false);
+
+    chatRequest.run();
+
+    return DataTypes.makeStringValue(chatRequest.responseText);
   }
 
   public static Value spawn_thread(
