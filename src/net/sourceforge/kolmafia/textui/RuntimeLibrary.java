@@ -151,6 +151,7 @@ import net.sourceforge.kolmafia.request.CampgroundRequest;
 import net.sourceforge.kolmafia.request.CampgroundRequest.CropType;
 import net.sourceforge.kolmafia.request.CargoCultistShortsRequest;
 import net.sourceforge.kolmafia.request.CastBuffRequest;
+import net.sourceforge.kolmafia.request.ChatRequest;
 import net.sourceforge.kolmafia.request.ChezSnooteeRequest;
 import net.sourceforge.kolmafia.request.ClanLoungeRequest;
 import net.sourceforge.kolmafia.request.ClanStashRequest;
@@ -606,6 +607,9 @@ public abstract class RuntimeLibrary {
             namedParam("count", DataTypes.INT_TYPE),
             namedParam("targetPlayerId", DataTypes.INT_TYPE));
     functions.add(new LibraryFunction("buffoonery_cast_buff", DataTypes.AGGREGATE_TYPE, params));
+
+    params = List.of(namedParam("lastSeen", DataTypes.STRING_TYPE));
+    functions.add(new LibraryFunction("buffoonery_poll_chat", DataTypes.STRING_TYPE, params));
 
     params =
         List.of(
@@ -4629,6 +4633,18 @@ public abstract class RuntimeLibrary {
     result.aset(1, DataTypes.makeStringValue(request.getResultText()), null);
 
     return result;
+  }
+
+  public static Value buffoonery_poll_chat(ScriptRuntime controller, final Value lastSeen) {
+    var chatRequest = new ChatRequest(lastSeen.contentString, true, false);
+
+    chatRequest.run();
+
+    var localLastSeen = ChatPoller.localLastSeen;
+
+    ChatPoller.handleNewChat(chatRequest.responseText, "", localLastSeen);
+
+    return DataTypes.makeStringValue(chatRequest.responseText);
   }
 
   public static Value spawn_thread(
