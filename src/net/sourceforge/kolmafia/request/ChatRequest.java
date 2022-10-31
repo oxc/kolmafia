@@ -12,10 +12,21 @@ public class ChatRequest extends GenericRequest {
    * Constructs a new <code>ChatRequest</code> where the given parameter will be passed to the PHP
    * file to indicate where you left off.
    *
-   * @param lastSeen The timestamp of the last message received
+   * @param lastSeen The messageId of the last message received
    * @param tabbedChat true if "modern" chat, false if "older" chat
    */
   public ChatRequest(final long lastSeen, final boolean tabbedChat, final boolean afk) {
+    this(String.valueOf(lastSeen), tabbedChat, afk);
+  }
+
+  /**
+   * Constructs a new <code>ChatRequest</code> where the given parameter will be passed to the PHP
+   * file to indicate where you left off.
+   *
+   * @param lastSeen The messageId of the last message received
+   * @param tabbedChat true if "modern" chat, false if "older" chat
+   */
+  public ChatRequest(final String lastSeen, final boolean tabbedChat, final boolean afk) {
     super("", false);
 
     // Construct a URL to submit via GET, just like the browser
