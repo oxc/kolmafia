@@ -255,6 +255,9 @@ public class JavascriptRuntime extends AbstractRuntime {
       if (unwrapped instanceof ScriptException) {
         String escapedMessage = escapeHtmlInMessage("Script exception: " + unwrapped.getMessage());
         KoLmafia.updateDisplay(KoLConstants.MafiaState.ERROR, escapedMessage);
+        if (stackOnAbort) {
+          StaticEntity.printStackTrace(unwrapped);
+        }
       } else {
         if (stackOnAbort) {
           StringBuilder message = new StringBuilder("Internal exception");
@@ -285,6 +288,9 @@ public class JavascriptRuntime extends AbstractRuntime {
     } catch (ScriptException e) {
       String escapedMessage = escapeHtmlInMessage("Script exception: " + e.getMessage());
       KoLmafia.updateDisplay(KoLConstants.MafiaState.ERROR, escapedMessage);
+      if (stackOnAbort) {
+        StaticEntity.printStackTrace(e);
+      }
     } finally {
       setState(State.EXIT);
     }
