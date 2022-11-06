@@ -96,8 +96,16 @@ public class RelayServer implements Runnable {
   @Override
   public void run() {
     boolean startedSuccessfully = true;
-    Integer minPort = 60080;
-    Integer maxPort = minPort + 10;
+
+    int minPort, maxPort;
+    int relayPort = Preferences.getInteger("relayPort");
+    if (relayPort == 0) {
+      minPort = 60080;
+      maxPort = minPort + 10;
+    } else {
+      minPort = relayPort;
+      maxPort = relayPort;
+    }
     RelayServer.port = minPort;
     while (!this.openServerSocket()) {
       if (RelayServer.port < maxPort) {
@@ -105,7 +113,11 @@ public class RelayServer implements Runnable {
       } else {
         KoLmafia.updateDisplay(
             KoLConstants.MafiaState.ERROR,
-            "Failed to find free port in range " + minPort + " to " + maxPort + ".");
+            "Failed to find free port in range "
+                + minPort
+                + " to "
+                + maxPort
+                + ". You can set 'relayPort' preference to choose a different port.");
         startedSuccessfully = false;
         break;
       }
