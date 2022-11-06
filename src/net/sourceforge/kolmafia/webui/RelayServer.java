@@ -96,8 +96,16 @@ public class RelayServer implements Runnable {
   @Override
   public void run() {
     boolean startedSuccessfully = true;
-    Integer minPort = 60080;
-    Integer maxPort = minPort + 10;
+
+    int minPort, maxPort;
+    int relayPort = Preferences.getInteger("relayPort");
+    if (relayPort == 0) {
+      minPort = 60080;
+      maxPort = minPort + 10;
+    } else {
+      minPort = relayPort;
+      maxPort = relayPort;
+    }
     RelayServer.port = minPort;
     while (!this.openServerSocket()) {
       if (RelayServer.port < maxPort) {
