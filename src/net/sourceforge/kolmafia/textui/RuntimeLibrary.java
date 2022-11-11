@@ -509,6 +509,18 @@ public abstract class RuntimeLibrary {
         };
     functions.add(new LibraryFunction("buffoonery_make_request", DataTypes.AGGREGATE_TYPE, params));
 
+    params = new Type[] {DataTypes.STRING_TYPE, DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("buffoonery_open_websocket", DataTypes.INT_TYPE, params));
+
+    params =
+        new Type[] {
+          DataTypes.STRING_TYPE, DataTypes.STRING_TYPE, DataTypes.INT_TYPE, DataTypes.STRING_TYPE
+        };
+    functions.add(new LibraryFunction("buffoonery_open_websocket", DataTypes.INT_TYPE, params));
+
+    params = new Type[] {DataTypes.INT_TYPE, DataTypes.INT_TYPE, DataTypes.STRING_TYPE};
+    functions.add(new LibraryFunction("buffoonery_close_websocket", DataTypes.VOID_TYPE, params));
+
     params = new Type[] {DataTypes.SKILL_TYPE, DataTypes.INT_TYPE, DataTypes.STRING_TYPE};
     functions.add(new LibraryFunction("buffoonery_cast_buff", DataTypes.AGGREGATE_TYPE, params));
 
@@ -3612,6 +3624,43 @@ public abstract class RuntimeLibrary {
     } catch (Exception e) {
       throw controller.runtimeException2(
           "Error making buffoonery REST call to " + httpPath.contentString + ":", e.getMessage());
+    }
+  }
+
+  public static Value buffoonery_open_websocket(
+      ScriptRuntime controller, final Value httpPath, final Value channelName) {
+    return buffoonery_open_websocket(
+        controller, httpPath, new Value(""), new Value(0), channelName);
+  }
+
+  public static Value buffoonery_open_websocket(
+      ScriptRuntime controller,
+      final Value httpPath,
+      final Value query,
+      final Value pingInterval,
+      final Value channelName) {
+    try {
+      var handle =
+          BuffooneryHttpClient.INSTANCE.openWebSocket(
+              httpPath.contentString,
+              query.contentString,
+              pingInterval.intValue(),
+              channelName.contentString);
+
+      return DataTypes.makeIntValue(handle);
+    } catch (Exception e) {
+      throw controller.runtimeException2("Error opening buffoonery websocket", e.getMessage());
+    }
+  }
+
+  public static Value buffoonery_close_websocket(
+      ScriptRuntime controller, final Value handle, final Value code, final Value reason) {
+    try {
+      BuffooneryHttpClient.INSTANCE.closeWebSocket(
+          Math.toIntExact(handle.intValue()), (int) code.intValue(), reason.contentString);
+      return continueValue();
+    } catch (Exception e) {
+      throw controller.runtimeException2("Error closing buffoonery websocket", e.getMessage());
     }
   }
 
