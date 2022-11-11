@@ -98,7 +98,7 @@ dependencies {
 
   implementation("com.squareup.okhttp3:okhttp:4.12.0")
   implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
-  
+
   implementation("net.sourceforge.htmlcleaner:htmlcleaner:2.29")
   implementation("org.jsoup:jsoup:1.21.2")
   implementation("org.eclipse.lsp4j:org.eclipse.lsp4j:0.24.0") {
