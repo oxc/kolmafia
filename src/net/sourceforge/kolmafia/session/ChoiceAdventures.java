@@ -27,7 +27,6 @@ import net.sourceforge.kolmafia.objectpool.OutfitPool;
 import net.sourceforge.kolmafia.objectpool.SkillPool;
 import net.sourceforge.kolmafia.persistence.AdventureDatabase;
 import net.sourceforge.kolmafia.persistence.DateTimeManager;
-import net.sourceforge.kolmafia.persistence.ItemDatabase;
 import net.sourceforge.kolmafia.persistence.MonsterDatabase;
 import net.sourceforge.kolmafia.persistence.MonsterDatabase.Element;
 import net.sourceforge.kolmafia.preferences.Preferences;
@@ -44,59 +43,6 @@ import net.sourceforge.kolmafia.webui.ClanFortuneDecorator;
 import net.sourceforge.kolmafia.webui.MemoriesDecorator;
 
 public abstract class ChoiceAdventures {
-
-  private static final String[] NO_ITEM_NAMES = new String[0];
-
-  public static class Option {
-    private final String name;
-    private final int option;
-    private final AdventureResult[] items;
-
-    public Option(final String name) {
-      this(name, 0, NO_ITEM_NAMES);
-    }
-
-    public Option(final String name, final String... itemNames) {
-      this(name, 0, itemNames);
-    }
-
-    public Option(final String name, final int option) {
-      this(name, option, NO_ITEM_NAMES);
-    }
-
-    public Option(final String name, final int option, final String... itemNames) {
-      this.name = name;
-      this.option = option;
-
-      int count = itemNames.length;
-      this.items = new AdventureResult[count];
-
-      for (int index = 0; index < count; ++index) {
-        this.items[index] = ItemPool.get(ItemDatabase.getItemId(itemNames[index]));
-      }
-    }
-
-    public String getName() {
-      return this.name;
-    }
-
-    public int getOption() {
-      return this.option;
-    }
-
-    public int getDecision(final int def) {
-      return this.option == 0 ? def : this.option;
-    }
-
-    public AdventureResult[] getItems() {
-      return this.items;
-    }
-
-    @Override
-    public String toString() {
-      return this.name;
-    }
-  }
 
   public static class Spoilers {
     private final int choice;

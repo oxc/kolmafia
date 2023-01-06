@@ -2,7 +2,6 @@ package net.sourceforge.kolmafia.session;
 
 import net.sourceforge.kolmafia.RequestLogger;
 import net.sourceforge.kolmafia.preferences.Preferences;
-import net.sourceforge.kolmafia.session.ChoiceAdventures.Option;
 import net.sourceforge.kolmafia.utilities.ChoiceUtilities;
 
 public class VampOutManager {
