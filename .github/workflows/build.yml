@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  workflow_run:
+    workflows: [Rebase Upstream]
+    types:
+      - completed
+
 
 concurrency:
   group: build-and-tag-release
