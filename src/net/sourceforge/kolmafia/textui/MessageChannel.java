@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.TimeUnit;
+import net.sourceforge.kolmafia.RequestLogger;
 import org.jetbrains.annotations.Nullable;
 
 public class MessageChannel {
@@ -38,10 +39,12 @@ public class MessageChannel {
   }
 
   public @Nullable Message pollMessage() {
+    RequestLogger.printLine("pollMessage: " + channelName);
     return queue.poll();
   }
 
   public @Nullable Message pollMessage(long timeout, TimeUnit unit) throws InterruptedException {
+    RequestLogger.printLine("pollMessage: " + channelName + " " + timeout + " " + unit);
     return queue.poll(timeout, unit);
   }
 }
