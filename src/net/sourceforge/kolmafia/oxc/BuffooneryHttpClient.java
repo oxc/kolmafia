@@ -59,6 +59,20 @@ public class BuffooneryHttpClient {
         loggingLevel != null && !loggingLevel.isBlank() ? Level.valueOf(loggingLevel) : Level.NONE);
   }
 
+  private long getPref(String key, long def) {
+    var value = Preferences.getLong(key);
+    return value != 0 ? value : def;
+  }
+
+  @NotNull
+  public final OkHttpClient.Builder buildClient() {
+    return client
+        .newBuilder()
+        .connectTimeout(getPref("buffooneryHttpConnectTimeout", 5000), TimeUnit.MILLISECONDS)
+        .readTimeout(getPref("buffooneryHttpReadTimeout", 5000), TimeUnit.MILLISECONDS)
+        .writeTimeout(getPref("buffooneryHttpWriteTimeout", 5000), TimeUnit.MILLISECONDS);
+  }
+
   @NotNull
   private HttpUrl.Builder buildUrl(String httpPath) {
     var baseUrl = Preferences.getString("buffooneryBaseUrl");
@@ -98,10 +112,11 @@ public class BuffooneryHttpClient {
       throws IOException {
     updateLogLevel();
 
-    var client =
-        timeout > 0
-            ? this.client.newBuilder().readTimeout(timeout, TimeUnit.MILLISECONDS).build()
-            : this.client;
+    var clientBuilder = buildClient();
+    if (timeout > 0) {
+      clientBuilder.callTimeout(timeout, TimeUnit.MILLISECONDS);
+    }
+    var client = clientBuilder.build();
 
     Request request = buildRequest(httpMethod, httpPath, query, json);
     try (Response response = client.newCall(request).execute()) {
@@ -122,10 +137,13 @@ public class BuffooneryHttpClient {
     var channel = MessageChannel.getChannel(eventChannel);
     final Integer handle = nextWebsocketHandle.getAndIncrement();
 
-    var client =
-        pingInterval > 0
-            ? this.client.newBuilder().pingInterval(pingInterval, TimeUnit.MILLISECONDS).build()
-            : this.client;
+    var clientBuilder = buildClient();
+    clientBuilder.callTimeout(
+        getPref("buffooneryHttpWebsocketCallTimeout", 10_000), TimeUnit.MILLISECONDS);
+    if (pingInterval > 0) {
+      clientBuilder.pingInterval(pingInterval, TimeUnit.MILLISECONDS);
+    }
+    var client = clientBuilder.build();
 
     WebSocketListener listener = new MessageChannelWebsocketListener(channel, handle);
     var websocket = client.newWebSocket(request, listener);
