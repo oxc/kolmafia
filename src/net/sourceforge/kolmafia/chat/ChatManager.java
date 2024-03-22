@@ -306,20 +306,21 @@ public abstract class ChatManager {
       ChatManager.faxbotMessage = message;
     }
 
+    Date messageDate = message.getDate();
     String content = message.getContent();
 
     if (recipient == null) {
-      ChatManager.processCommand(sender, content, recipient);
+      ChatManager.processCommand(messageDate, sender, content, recipient);
     } else if (recipient.equals("/clan")
         || recipient.equals("/hobopolis")
         || recipient.equals("/slimetube")
         || recipient.equals("/dread")
         || recipient.equals("/hauntedhouse")) {
       ChatManager.clanMessages.add(message);
-      ChatManager.processCommand(sender, content, recipient);
+      ChatManager.processCommand(messageDate, sender, content, recipient);
     } else if (recipient.equals("/talkie")) {
       // Allow chatbot scripts to process talkie messages
-      ChatManager.processCommand(sender, content, recipient);
+      ChatManager.processCommand(messageDate, sender, content, recipient);
     } else if (Preferences.getBoolean("chatBeep")
         && (StringUtilities.globalStringReplace(KoLCharacter.getUserName(), " ", "_")
             .equalsIgnoreCase(recipient))) {
@@ -335,7 +336,7 @@ public abstract class ChatManager {
         }
       }
 
-      ChatManager.processCommand(sender, content, "");
+      ChatManager.processCommand(messageDate, sender, content, "");
       destination = sender;
     }
 
@@ -379,7 +380,7 @@ public abstract class ChatManager {
     // Otherwise, munge it, save it, and display it
     EventManager.addChatEvent(ChatFormatter.formatChatMessage(message, false));
     String cleanContent = KoLConstants.ANYTAG_PATTERN.matcher(content).replaceAll("");
-    ChatManager.processCommand("", cleanContent, "Events");
+    ChatManager.processCommand(message.getDate(), "", cleanContent, "Events");
     ChatManager.broadcastEvent(message);
   }
 
@@ -502,7 +503,7 @@ public abstract class ChatManager {
   }
 
   public static final void processCommand(
-      final String sender, final String content, final String channel) {
+      final Date messageDate, final String sender, final String content, final String channel) {
     if (sender == null || content == null) {
       return;
     }
@@ -577,11 +578,11 @@ public abstract class ChatManager {
       return;
     }
 
-    ChatManager.invokeChatScript(sender, content, channel);
+    ChatManager.invokeChatScript(messageDate, sender, content, channel);
   }
 
   public static final void invokeChatScript(
-      final String sender, final String content, final String channel) {
+      final Date messageDate, final String sender, final String content, final String channel) {
     String scriptName = Preferences.getString("chatbotScript");
     if (scriptName.equals("")) {
       return;
@@ -594,17 +595,19 @@ public abstract class ChatManager {
     }
 
     String name = scriptFiles.get(0).getName();
-    int parameterCount = 3;
+    int parameterCount = 4;
     if (interpreter instanceof AshRuntime) {
       parameterCount =
           ((AshRuntime) interpreter).getParser().getMainMethod().getVariableReferences().size();
     }
 
-    String[] scriptParameters;
-    if (parameterCount == 3) {
-      scriptParameters = new String[] {sender, content, channel};
+    Object[] scriptParameters;
+    if (parameterCount == 4) {
+      scriptParameters = new Object[] {sender, content, channel, messageDate};
+    } else if (parameterCount == 3) {
+      scriptParameters = new Object[] {sender, content, channel};
     } else if (channel != null && !channel.equals("")) {
-      scriptParameters = new String[] {sender, content};
+      scriptParameters = new Object[] {sender, content};
     } else {
       return;
     }
