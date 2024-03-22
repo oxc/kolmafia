@@ -359,6 +359,10 @@ public class ChatPoller extends Thread {
         continue;
       }
 
+      String time = msg.getString("time");
+      long timestamp = StringUtilities.parseLong(time);
+      Date messageDate = new Date(timestamp * 1000);
+
       String type = msg.getString("type");
       boolean pub = type.equals("public");
 
@@ -450,7 +454,7 @@ public class ChatPoller extends Thread {
         continue;
       }
 
-      messages.add(new ChatMessage(sender, recipient, content, isAction));
+      messages.add(new ChatMessage(messageDate, sender, recipient, content, isAction));
     }
 
     return messages;
