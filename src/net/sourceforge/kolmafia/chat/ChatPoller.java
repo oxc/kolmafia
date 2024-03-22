@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import net.sourceforge.kolmafia.KoLCharacter;
+import net.sourceforge.kolmafia.RequestLogger;
 import net.sourceforge.kolmafia.RequestThread;
 import net.sourceforge.kolmafia.StaticEntity;
 import net.sourceforge.kolmafia.listener.NamedListenerRegistry;
@@ -338,6 +339,8 @@ public class ChatPoller extends Thread {
       ChatPoller.parseNewChat(
           messages, JSON.parseObject(responseData), "", ChatPoller.localLastSeen, true);
     } catch (JSONException e) {
+      RequestLogger.updateDebugLog("Error parsing chat response: " + responseData);
+      RequestLogger.updateDebugLog(e);
       e.printStackTrace();
     }
     return messages;
@@ -451,7 +454,16 @@ public class ChatPoller extends Thread {
         continue;
       }
 
-      messages.add(new ChatMessage(sender, recipient, content, isAction));
+      Date messageDate;
+      String time = msg.getString("time");
+      if (time != null) {
+        long timestamp = StringUtilities.parseLong(time);
+        messageDate = new Date(timestamp * 1000);
+      } else {
+        messageDate = new Date();
+      }
+
+      messages.add(new ChatMessage(messageDate, sender, recipient, content, isAction));
     }
 
     return messages;
