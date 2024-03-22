@@ -18,19 +18,27 @@ public class ChatMessage {
   private static final SimpleDateFormat MESSAGE_TIMESTAMP =
       new SimpleDateFormat("[HH:mm]", Locale.US);
 
-  public ChatMessage() {
-    this.date = new Date();
+  public ChatMessage(Date date) {
+    this.date = date;
     this.timestamp = ChatMessage.MESSAGE_TIMESTAMP.format(date);
   }
 
-  public ChatMessage(String sender, String recipient, String content, boolean isAction) {
+  public ChatMessage() {
+    this(new Date());
+  }
+
+  public ChatMessage(Date date, String sender, String recipient, String content, boolean isAction) {
     this.sender = sender;
     this.recipient = recipient;
     this.content = content.trim();
     this.isAction = isAction;
 
-    this.date = new Date();
+    this.date = date;
     this.timestamp = ChatMessage.MESSAGE_TIMESTAMP.format(date);
+  }
+
+  public ChatMessage(String sender, String recipient, String content, boolean isAction) {
+    this(new Date(), sender, recipient, content, isAction);
   }
 
   public String getSender() {
