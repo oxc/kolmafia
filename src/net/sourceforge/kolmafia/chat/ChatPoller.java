@@ -459,6 +459,7 @@ public class ChatPoller extends Thread {
         long timestamp = StringUtilities.parseLong(time);
         messageDate = new Date(timestamp * 1000);
       } else {
+        RequestLogger.updateSessionLog("No timestamp in message: " + obj);
         messageDate = new Date();
       }
 
