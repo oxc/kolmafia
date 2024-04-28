@@ -7,6 +7,8 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -136,19 +138,82 @@ public class TypescriptDefinition {
   }
 
   public static String formatFunction(LibraryFunction f) {
-    var name = JavascriptRuntime.toCamelCase(f.getName());
-    var type = getReturnType(f);
-    var paramTypes = getParamTypes(f);
+    var strings = formatFunction(List.of(f)).toList();
+    if (strings.size() != 1) {
+      throw new IllegalStateException("Expected exactly one string, got " + strings.size());
+    }
+    return strings.get(0);
+  }
 
-    var params =
-        paramTypes.stream().map(FunctionParameter::format).collect(Collectors.joining(", "));
+  public static Stream<String> formatFunction(List<LibraryFunction> functionOverloads) {
+    // sort overlodas by shortest paramlist first, so we can find potentially optional params
+    var overloads = new ArrayList<>(functionOverloads);
+    overloads.sort(Comparator.comparingInt(a -> a.getVariableReferences().size()));
 
-    var deprecationWarning =
-        (f.deprecationWarning.length > 0)
-            ? "/** @deprecated " + String.join("<br>", f.deprecationWarning) + " */\n"
-            : "";
+    var functionName = JavascriptRuntime.toCamelCase(overloads.get(0).getName());
 
-    return String.format("%sexport function %s(%s): %s;", deprecationWarning, name, params, type);
+    var result = Stream.<String>builder();
+
+    // pre-collect the params so we can modify them
+    var overloadsParams = overloads.stream().map(TypescriptDefinition::getParamTypes).toList();
+
+    overload:
+    for (int i = 0; i < overloads.size(); i++) {
+      var f = overloads.get(i);
+      var type = getReturnType(f);
+      var paramTypes = overloadsParams.get(i);
+
+      // try to find an overload with one additional parameter
+      findNext:
+      for (int j = i + 1; j < overloads.size(); j++) {
+        var next = overloads.get(j);
+
+        if (next.getVariableReferences().size() != f.getVariableReferences().size() + 1) {
+          continue;
+        }
+        if (!type.equals(getReturnType(next))) continue;
+
+        var nextParamTypes = overloadsParams.get(j);
+        var hasOptionalArgs = false;
+        for (int p = 0; p < paramTypes.size(); p++) {
+          var param = paramTypes.get(p);
+          var nextParam = nextParamTypes.get(p);
+          if (!param.type.equals(nextParam.type)) continue findNext;
+          if (!param.name.equals(nextParam.name)) continue findNext;
+          if (param.isOptional) hasOptionalArgs = true;
+        }
+        // TODO: should we compare deprecation warnings?
+
+        // NOTE: because TypeScript allows passing undefined for optional parameters, we can
+        //       only mark the very last one of each overloaded signature as optional
+
+        // mark other signature's last parameter as optional
+        nextParamTypes.get(paramTypes.size()).isOptional = true;
+
+        if (hasOptionalArgs) {
+          // this overload has optional args, so it was already used to skip a previous one, and
+          // cannot be omitted
+          break findNext;
+        } else {
+          // this overload is fully included in the overload we just marked, so skip it
+          continue overload;
+        }
+      }
+
+      var params =
+          paramTypes.stream().map(FunctionParameter::format).collect(Collectors.joining(", "));
+
+      var deprecationWarning =
+          (f.deprecationWarning.length > 0)
+              ? "/** @deprecated " + String.join("<br>", f.deprecationWarning) + " */\n"
+              : "";
+
+      result.add(
+          String.format(
+              "%sexport function %s(%s): %s;", deprecationWarning, functionName, params, type));
+    }
+
+    return result.build();
   }
 
   private static Stream<LibraryFunction> getFunctions() {
@@ -159,7 +224,14 @@ public class TypescriptDefinition {
   }
 
   private static List<String> getFunctionDefinitions() {
-    return getFunctions().map(TypescriptDefinition::formatFunction).toList();
+    return getFunctions()
+        .collect(
+            Collectors.groupingBy(
+                LibraryFunction::getName, LinkedHashMap::new, Collectors.toList()))
+        .values()
+        .stream()
+        .flatMap(TypescriptDefinition::formatFunction)
+        .toList();
   }
 
   private static List<String> getFunctionHeaders() {
