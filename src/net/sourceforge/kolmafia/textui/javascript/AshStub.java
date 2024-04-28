@@ -10,6 +10,7 @@ import net.sourceforge.kolmafia.textui.parsetree.Function;
 import net.sourceforge.kolmafia.textui.parsetree.Function.MatchType;
 import net.sourceforge.kolmafia.textui.parsetree.FunctionList;
 import net.sourceforge.kolmafia.textui.parsetree.ProxyRecordValue;
+import net.sourceforge.kolmafia.textui.parsetree.Type;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
 import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Context;
@@ -83,21 +84,28 @@ public abstract class AshStub extends BaseFunction {
     }
 
     // Second, infer the type for any missing arguments from the closest function match.
+    boolean argsChanged = false;
     for (int i = 0; i < ashArgs.size(); i++) {
-      Object original = args[i];
-      Value coerced = coercer.fromJava(original);
-      if (coerced == null) {
-        // Try again, this time with a type hint.
-        coerced = coercer.fromJava(original, function.getVariableReferences().get(i).getType());
-        if (coerced == null) {
-          throw controller.runtimeException("Could not coerce argument to valid ASH value.");
-        }
+      if (ashArgs.get(i).getType() != DataTypes.ANY_TYPE) {
+        continue;
       }
+      Object original = args[i];
+      // Try again, this time with a type hint.
+      Type typeHint = function.getVariableReferences().get(i).getType();
+      Value coerced = coercer.fromJava(original, typeHint);
+      if (coerced == null || coerced.getType() == DataTypes.ANY_TYPE) {
+        throw controller.runtimeException("Could not coerce argument to valid ASH value.");
+      }
+      ashArgs.set(i, coerced);
+      argsChanged = true;
     }
-    function = findMatchingFunction(ashArgs);
+    if (argsChanged) {
+      function = findMatchingFunction(ashArgs);
 
-    if (function == null) {
-      throw controller.runtimeException(Parser.undefinedFunctionMessage(ashFunctionName, ashArgs));
+      if (function == null) {
+        throw controller.runtimeException(
+            Parser.undefinedFunctionMessage(ashFunctionName, ashArgs));
+      }
     }
 
     Value ashReturnValue = execute(function, ashArgs);
