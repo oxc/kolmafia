@@ -24,7 +24,6 @@ import net.sourceforge.kolmafia.textui.parsetree.RecordType;
 import net.sourceforge.kolmafia.textui.parsetree.Symbol;
 import net.sourceforge.kolmafia.textui.parsetree.Type;
 import net.sourceforge.kolmafia.textui.parsetree.VarArgType;
-import net.sourceforge.kolmafia.textui.parsetree.VariableReference;
 import net.sourceforge.kolmafia.utilities.StringUtilities;
 
 public class TypescriptDefinition {
@@ -72,31 +71,51 @@ public class TypescriptDefinition {
           DataTypes.SLOT_TYPE,
           DataTypes.THRALL_TYPE);
 
-  private static List<Boolean> getVariadicParams(Function f) {
-    return f.getVariableReferences().stream()
-        .map(VariableReference::getRawType)
-        .map(type -> type instanceof VarArgType)
-        .collect(Collectors.toList());
+  private static class FunctionParameter {
+    public String name;
+    public String type;
+    public boolean isVariadic;
+    public boolean isOptional = false;
+
+    public FunctionParameter(String name, String type, boolean isVariadic) {
+      this.name = name;
+      this.type = type;
+      this.isVariadic = isVariadic;
+    }
+
+    public String format() {
+      if (isVariadic) return String.format("...%s: %s", name, type);
+      if (isOptional) return String.format("%s?: %s", name, type);
+      return String.format("%s: %s", name, type);
+    }
   }
 
-  private static List<String> getParamTypes(Function f) {
-    var paramTypes =
-        f.getVariableReferences().stream()
-            .map(VariableReference::getRawType)
-            .map(TypescriptDefinition::getType)
-            .collect(Collectors.toList());
+  private static List<FunctionParameter> getParamTypes(Function f) {
+    var varRefs = f.getVariableReferences();
+    var functionName = f.getName();
+    var paramTypes = new ArrayList<FunctionParameter>(varRefs.size());
 
-    switch (f.getName()) {
-      case "adv1", "adventure" -> {
-        if (paramTypes.size() >= 3) {
-          paramTypes.set(2, combatFilterType);
+    for (int paramIndex = 0; paramIndex < varRefs.size(); paramIndex++) {
+      var ref = varRefs.get(paramIndex);
+      var type = ref.getRawType();
+      var paramName = ref.getName();
+      var isVariadic = type instanceof VarArgType;
+      var tsType = getType(type);
+
+      switch (functionName) {
+        case "adv1", "adventure" -> {
+          if (paramIndex == 2) {
+            tsType = combatFilterType;
+          }
+        }
+        case "run_combat" -> {
+          if (paramIndex == 0) {
+            tsType = combatFilterType;
+          }
         }
       }
-      case "run_combat" -> {
-        if (paramTypes.size() >= 1) {
-          paramTypes.set(0, combatFilterType);
-        }
-      }
+
+      paramTypes.add(new FunctionParameter(paramName, tsType, isVariadic));
     }
 
     return paramTypes;
@@ -120,17 +139,9 @@ public class TypescriptDefinition {
     var name = JavascriptRuntime.toCamelCase(f.getName());
     var type = getReturnType(f);
     var paramTypes = getParamTypes(f);
-    var paramNames = f.getParameterNames();
-    var variadicParams = getVariadicParams(f);
 
     var params =
-        IntStream.range(0, paramNames.size())
-            .mapToObj(
-                i ->
-                    variadicParams.get(i)
-                        ? String.format("...%s: %s", paramNames.get(i), paramTypes.get(i))
-                        : String.format("%s: %s", paramNames.get(i), paramTypes.get(i)))
-            .collect(Collectors.joining(", "));
+        paramTypes.stream().map(FunctionParameter::format).collect(Collectors.joining(", "));
 
     var deprecationWarning =
         (f.deprecationWarning.length > 0)
