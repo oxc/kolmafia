@@ -23,6 +23,7 @@ import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 
 public class ValueConverter {
   private final Context cx;
@@ -217,6 +218,8 @@ public class ValueConverter {
       return convertNativeArray((NativeArray) object, typeHint);
     } else if (object instanceof Value) {
       return (Value) object;
+    } else if (Undefined.isUndefined(object)) {
+      return null;
     } else {
       return DataTypes.makeStringValue(object.toString());
     }

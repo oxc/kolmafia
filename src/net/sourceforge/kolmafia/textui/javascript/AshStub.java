@@ -16,6 +16,7 @@ import org.mozilla.javascript.BaseFunction;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.NativeJavaObject;
 import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.Undefined;
 
 public abstract class AshStub extends BaseFunction {
   private static final long serialVersionUID = 1L;
@@ -65,12 +66,21 @@ public abstract class AshStub extends BaseFunction {
   public Object call(Context cx, Scriptable scope, Scriptable thisObj, Object[] args) {
     JavascriptRuntime.checkInterrupted();
 
+    // strip trailing undefined arguments, allowing to pass undefined for optional arguments
+    // If we ever support undefined values, this will have to become a bit more elaborate, but for
+    // now every undefined value leads to undefinedFunctionMessage anyway, so this is fine.
+    int definedArgs = args.length;
+    while (definedArgs > 0 && Undefined.isUndefined(args[definedArgs - 1])) {
+      definedArgs -= 1;
+    }
+
     ValueConverter coercer = new ValueConverter(cx, scope);
 
     // Find library function matching arguments, in two stages.
     // First, designate any arguments where we can't determine type from JS as ANY_TYPE.
     List<Value> ashArgs = new ArrayList<>();
-    for (final Object original : args) {
+    for (int i = 0; i < definedArgs; i++) {
+      Object original = args[i];
       Value coerced = coercer.fromJava(original);
       if (coerced == null) {
         coerced = new Value(DataTypes.ANY_TYPE);
