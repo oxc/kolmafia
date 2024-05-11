@@ -1,1 +1,1 @@
-Internal error: Cannot assign string to float (test_empty_vararg_type_mismatch.ash, line 1)
+Function 'max( string )' undefined.  This script may require a more recent version of KoLmafia and/or its supporting scripts. (test_empty_vararg_type_mismatch.ash, line 1, char 2 to char 5)
