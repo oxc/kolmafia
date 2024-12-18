@@ -19,6 +19,8 @@ import net.sourceforge.kolmafia.textui.parsetree.PluralValue;
 import net.sourceforge.kolmafia.textui.parsetree.RecordValue;
 import net.sourceforge.kolmafia.textui.parsetree.Type;
 import net.sourceforge.kolmafia.textui.parsetree.Value;
+import org.mozilla.javascript.IdScriptableObject;
+import org.mozilla.javascript.ScriptRuntime;
 import org.mozilla.javascript.Undefined;
 
 public abstract class ValueConverter<ObjectType> {
@@ -189,6 +191,9 @@ public abstract class ValueConverter<ObjectType> {
           object instanceof StringBuffer ? object : new StringBuffer(object.toString()));
     } else if (object instanceof CharSequence) {
       return DataTypes.makeStringValue(object.toString());
+    } else if (object instanceof IdScriptableObject
+        && ((IdScriptableObject) object).getClassName().equals("String")) {
+      return DataTypes.makeStringValue(ScriptRuntime.toCharSequence(object).toString());
     } else if (object instanceof MonsterData) {
       return DataTypes.makeMonsterValue((MonsterData) object);
     } else if (object instanceof Map) {
