@@ -33,6 +33,7 @@ public class AdventureResult implements Comparable<AdventureResult>, Cloneable {
 
   public enum Priority {
     MONSTER,
+    SKILL,
 
     NONE,
     ADV,
@@ -387,6 +388,10 @@ public class AdventureResult implements Comparable<AdventureResult>, Cloneable {
     return this.priority == Priority.MONSTER;
   }
 
+  public boolean isSkill() {
+    return this.priority == Priority.SKILL;
+  }
+
   /**
    * Accessor method to retrieve the name associated with the result.
    *
@@ -501,6 +506,13 @@ public class AdventureResult implements Comparable<AdventureResult>, Cloneable {
 
   public int getEffectId() {
     if (this.priority == Priority.EFFECT) {
+      return this.id;
+    }
+    return -1;
+  }
+
+  public int getSkillId() {
+    if (this.priority == Priority.SKILL) {
       return this.id;
     }
     return -1;
@@ -1536,6 +1548,18 @@ public class AdventureResult implements Comparable<AdventureResult>, Cloneable {
     @Override
     public String toString() {
       return KoLConstants.COMMA_FORMAT.format(this.count) + " Meat";
+    }
+  }
+
+  public static class SkillResult extends AdventureResult {
+    public SkillResult(String name, int id) {
+      super(Priority.SKILL, name, 1);
+      this.id = id;
+    }
+
+    @Override
+    public String toString() {
+      return this.name;
     }
   }
 

@@ -37,6 +37,8 @@ import net.sourceforge.kolmafia.StaticEntity;
 import net.sourceforge.kolmafia.VYKEACompanionData;
 import net.sourceforge.kolmafia.VYKEACompanionData.VYKEACompanionType;
 import net.sourceforge.kolmafia.ZodiacSign;
+import net.sourceforge.kolmafia.chat.ChatManager;
+import net.sourceforge.kolmafia.chat.EnableMessage;
 import net.sourceforge.kolmafia.combat.MonsterStatusTracker;
 import net.sourceforge.kolmafia.equipment.Slot;
 import net.sourceforge.kolmafia.objectpool.EffectPool;
@@ -1077,6 +1079,16 @@ public class Player {
   public static Cleanups withoutSkill(final int skillId) {
     KoLCharacter.removeAvailableSkill(skillId);
     return new Cleanups(() -> KoLCharacter.removeAvailableSkill(skillId));
+  }
+
+  /**
+   * Ensures player does not have a skill
+   *
+   * @param skillName Skill to ensure is removed
+   * @return Removes the skill if it was gained
+   */
+  public static Cleanups withoutSkill(final String skillName) {
+    return withoutSkill(SkillDatabase.getSkillId(skillName));
   }
 
   /**
@@ -2760,5 +2772,24 @@ public class Player {
   public static Cleanups withFightRequestPokefam() {
     FightRequest.pokefam = true;
     return new Cleanups(() -> FightRequest.pokefam = false);
+  }
+
+  /**
+   * Sets the current chat channel
+   *
+   * @param channel Channel to use
+   * @return set the channel to the previous value
+   */
+  public static Cleanups withChatChannel(final String channel) {
+    var old = ChatManager.getCurrentChannel();
+    ChatManager.processChannelEnable(new EnableMessage(channel, true));
+    return new Cleanups(
+        () -> {
+          if (old == null) {
+            ChatManager.dispose();
+          } else {
+            ChatManager.processChannelEnable(new EnableMessage(old, true));
+          }
+        });
   }
 }
