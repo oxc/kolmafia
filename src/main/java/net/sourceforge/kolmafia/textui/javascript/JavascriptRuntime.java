@@ -228,6 +228,12 @@ public class JavascriptRuntime extends AbstractRuntime {
     // But be careful. May mess up our EnumeratedWrapper registries.
     Scriptable scope = cx.initSafeStandardObjects();
 
+    // currentStdLib is per-execution state that we have to hang off the runtime so that
+    // executeRun can reach it. Scripts can re-enter the same runtime (a script calling a
+    // script, or Macrofier calling back mid-combat), so save and restore rather than clearing:
+    // the outermost execution restores it to null.
+    Scriptable previousStdLib = this.currentStdLib;
+
     try {
       // If executing from GCLI (and not file), add std lib to top scope.
       currentStdLib = initRuntimeLibrary(cx, scope, scriptFile);
@@ -253,6 +259,10 @@ public class JavascriptRuntime extends AbstractRuntime {
       KoLmafia.updateDisplay(KoLConstants.MafiaState.ERROR, escapedMessage);
       return null;
     } finally {
+      // Cached runtimes live in KoLmafiaASH.INTERPRETERS forever. Holding on to the scope here
+      // would pin the whole Rhino object graph for this run -- including every compiled module's
+      // generated classes and their DefiningClassLoader -- for the life of the process.
+      this.currentStdLib = previousStdLib;
       EnumeratedWrapper.cleanup(scope);
       runningRuntimes.remove(this);
       Context.exit();
