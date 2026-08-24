@@ -26,16 +26,29 @@ import org.mozilla.javascript.commonjs.module.provider.UrlModuleSourceProvider;
 public class SafeRequire extends Require {
   private static final long serialVersionUID = 1L;
 
+  /**
+   * Shared across every script invocation, so that a module's compiled form is reused instead of
+   * being recompiled from source each time a script runs.
+   *
+   * <p>A Require is bound to the scope it was created for, so we cannot share the Require itself --
+   * but the module script provider is what holds the compiled modules, and it is what needs to
+   * outlive a single execution. Rhino compiles with a class-generating optimization level, so every
+   * recompile defines a fresh set of classes under a new DefiningClassLoader; a bot re-entering a
+   * script per chat message recompiled its whole module graph every time and ratcheted Metaspace's
+   * committed high-water mark up, which is never handed back to the OS.
+   *
+   * <p>Sharing is safe: CachingModuleScriptProviderBase keeps its cache in a ConcurrentMap behind
+   * striped load locks, and it revalidates each cached module against the source provider, so
+   * editing a script on disk still recompiles it. SoftCachingModuleScriptProvider holds the
+   * compiled scripts through SoftReferences, so they are still released under memory pressure.
+   */
+  private static final SoftCachingModuleScriptProvider MODULE_SCRIPT_PROVIDER =
+      new SoftCachingModuleScriptProvider(new KoLmafiaUrlModuleSourceProvider());
+
   private final Scriptable stdLib;
 
   public SafeRequire(Context cx, Scriptable nativeScope, Scriptable stdLib) {
-    super(
-        cx,
-        nativeScope,
-        new SoftCachingModuleScriptProvider(new KoLmafiaUrlModuleSourceProvider()),
-        null,
-        new MainWarningScript(),
-        true);
+    super(cx, nativeScope, MODULE_SCRIPT_PROVIDER, null, new MainWarningScript(), true);
     this.stdLib = stdLib;
   }
 
