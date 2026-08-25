@@ -57,6 +57,61 @@ public class JavascriptRuntime extends AbstractRuntime {
   static final Set<JavascriptRuntime> runningRuntimes = ConcurrentHashMap.newKeySet();
   static final ContextFactory contextFactory = new ObservingContextFactory();
 
+  /**
+   * Marks the scope that one script execution runs in, so that machinery which has to normalise
+   * some inner scope (a CommonJS ModuleScope, a function's activation) back to "the scope this
+   * execution owns" can stop there instead of walking on into the shared standard objects.
+   *
+   * @see EnumeratedWrapper#wrap
+   */
+  static final String EXECUTION_SCOPE_PROPERTY = "__executionScope__";
+
+  /**
+   * The ES6 standard objects, shared by every execution on this thread rather than rebuilt for each
+   * one. Building them is the single largest allocation an execution makes, and a script re-entered
+   * per chat message paid it every time.
+   *
+   * <p>Deliberately thread-confined rather than static: Rhino's scopes are not safe for concurrent
+   * mutation, and scripts do mutate the standard objects (any core-js style polyfill does). Since
+   * KoLmafia runs scripts on long-lived threads -- the ChatPoller thread re-invoking the chatbot
+   * script being the case that matters -- confining to a thread keeps the reuse where it pays while
+   * leaving each thread with its own copy.
+   *
+   * <p>The consequence to be aware of: scripts sharing a thread now share the standard objects, so
+   * one script's changes to a builtin prototype are visible to the next script on that thread.
+   */
+  private static final ThreadLocal<Scriptable> sharedStandardObjects = new ThreadLocal<>();
+
+  private static Scriptable getSharedStandardObjects(Context cx) {
+    Scriptable shared = sharedStandardObjects.get();
+    if (shared == null) {
+      shared = cx.initSafeStandardObjects();
+      sharedStandardObjects.set(shared);
+    }
+    return shared;
+  }
+
+  /**
+   * Creates the scope for a single execution: a fresh, empty top-level scope that inherits the
+   * standard objects from the shared scope. Everything an execution defines -- the runtime library,
+   * the enumerated type prototypes, the script's own globals -- lands here and is discarded with
+   * it.
+   */
+  private static Scriptable newExecutionScope(Context cx) {
+    Scriptable shared = getSharedStandardObjects(cx);
+    Scriptable scope = cx.newObject(shared);
+    scope.setPrototype(shared);
+    scope.setParentScope(null);
+    ScriptableObject.defineProperty(
+        scope, EXECUTION_SCOPE_PROPERTY, Boolean.TRUE, DONTENUM | READONLY | PERMANENT);
+    return scope;
+  }
+
+  /** Whether this scope is the one an execution owns, as marked by {@link #newExecutionScope}. */
+  static boolean isExecutionScope(Scriptable scope) {
+    return scope.has(EXECUTION_SCOPE_PROPERTY, scope);
+  }
+
   /** Set while an abort that's already printed, unwinds on this thread. */
   private static final ThreadLocal<Boolean> abortUnwinding = ThreadLocal.withInitial(() -> false);
 
@@ -224,9 +279,7 @@ public class JavascriptRuntime extends AbstractRuntime {
     cx.setTrackUnhandledPromiseRejections(true);
     runningRuntimes.add(this);
 
-    // TODO: Use a shared parent scope and initialize this with that as a prototype.
-    // But be careful. May mess up our EnumeratedWrapper registries.
-    Scriptable scope = cx.initSafeStandardObjects();
+    Scriptable scope = newExecutionScope(cx);
 
     // currentStdLib is per-execution state that we have to hang off the runtime so that
     // executeRun can reach it. Scripts can re-enter the same runtime (a script calling a
@@ -357,7 +410,7 @@ public class JavascriptRuntime extends AbstractRuntime {
 
   private static Object resolvePromise(Context cx, NativePromise promise) {
     // there is no good way to access promise.getResult, so let the engine store it in a variable
-    Scriptable promiseScope = cx.initSafeStandardObjects();
+    Scriptable promiseScope = newExecutionScope(cx);
     promiseScope.put("promise", promiseScope, promise);
     cx.evaluateString(
         promiseScope,
