@@ -35,9 +35,19 @@ public class EnumeratedWrapper extends ScriptableObject {
   }
 
   public static EnumeratedWrapper wrap(Scriptable scope, Class<?> recordValueClass, Value wrapped) {
+    // Normalise an inner scope (typically a CommonJS ModuleScope) up to the scope that owns this
+    // execution, so that every module of one script shares a registry and wrappers compare equal.
+    //
+    // Stop at the execution scope. Past it lies the standard objects scope, which is shared by
+    // every execution on this thread: registering there would both leak wrappers (cleanup is keyed
+    // by execution scope) and hand one script's wrappers to the next. Scopes built without the
+    // marker -- tests construct some directly -- keep the original walk-to-Object.prototype
+    // behaviour.
     scope = getTopLevelScope(scope);
     Scriptable proto = scope.getPrototype();
-    while (proto != null && proto != getObjectPrototype(scope)) {
+    while (!JavascriptRuntime.isExecutionScope(scope)
+        && proto != null
+        && proto != getObjectPrototype(scope)) {
       scope = proto;
       proto = scope.getPrototype();
     }
