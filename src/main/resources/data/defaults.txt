@@ -77,6 +77,7 @@ global	https.proxyUser
 global	initialDesktop	AdventureFrame,CommandDisplayFrame,MallSearchFrame,GearChangeFrame,SkillBuffFrame
 global	initialFrames	LocalRelayServer
 global	itemManagerIndex	0
+global	jsPinnedScripts
 global	lastBuffRequestType	0
 global	lastGlobalCounterDay	-1
 global	lastImageCacheClear	0
