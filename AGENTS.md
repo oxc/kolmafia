@@ -1,3 +1,8 @@
+<!-- Fork note (oxc/kolmafia) — everything below is upstream's. -->
+> **This is the `oxc/kolmafia` fork.** `main` is `upstream/main` plus a stack of fork
+> commits, replayed by rebase. Before rebasing, editing the build/release workflows, or
+> touching anything under `src/net/sourceforge/kolmafia/oxc/`, read [FORK.md](FORK.md).
+
 # KoLmafia
 
 Java 21 desktop tool for [Kingdom of Loathing](https://kingdomofloathing.com).
