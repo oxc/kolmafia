@@ -20,7 +20,6 @@ import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.mozilla.javascript.commonjs.module.Require;
 import org.mozilla.javascript.commonjs.module.provider.ParsedContentType;
-import org.mozilla.javascript.commonjs.module.provider.SoftCachingModuleScriptProvider;
 import org.mozilla.javascript.commonjs.module.provider.UrlModuleSourceProvider;
 
 public class SafeRequire extends Require {
@@ -39,11 +38,11 @@ public class SafeRequire extends Require {
    *
    * <p>Sharing is safe: CachingModuleScriptProviderBase keeps its cache in a ConcurrentMap behind
    * striped load locks, and it revalidates each cached module against the source provider, so
-   * editing a script on disk still recompiles it. SoftCachingModuleScriptProvider holds the
-   * compiled scripts through SoftReferences, so they are still released under memory pressure.
+   * editing a script on disk still recompiles it. Modules are held softly, and so still released
+   * under memory pressure, unless jsPinnedScripts names them -- see PinningModuleScriptProvider.
    */
-  private static final SoftCachingModuleScriptProvider MODULE_SCRIPT_PROVIDER =
-      new SoftCachingModuleScriptProvider(new KoLmafiaUrlModuleSourceProvider());
+  private static final PinningModuleScriptProvider MODULE_SCRIPT_PROVIDER =
+      new PinningModuleScriptProvider(new KoLmafiaUrlModuleSourceProvider());
 
   private final Scriptable stdLib;
 
