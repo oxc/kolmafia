@@ -162,6 +162,7 @@ import net.sourceforge.kolmafia.request.ClanStashRequest.ClanStashRequestType;
 import net.sourceforge.kolmafia.request.ClosetRequest;
 import net.sourceforge.kolmafia.request.ClosetRequest.ClosetRequestType;
 import net.sourceforge.kolmafia.request.CoinMasterPurchaseRequest;
+import net.sourceforge.kolmafia.request.ContactListRequest;
 import net.sourceforge.kolmafia.request.CraftRequest;
 import net.sourceforge.kolmafia.request.CurseRequest;
 import net.sourceforge.kolmafia.request.DeckOfEveryCardRequest;
@@ -2825,6 +2826,18 @@ public abstract class RuntimeLibrary {
 
     params = List.of(namedParam("playerIdValue", DataTypes.INT_TYPE));
     functions.add(new LibraryFunction("get_player_name", DataTypes.STRING_TYPE, params));
+
+    params = List.of();
+    functions.add(new LibraryFunction("ignore_list", DataTypes.INT_TO_STRING_TYPE, params));
+
+    params = List.of(namedParam("playerValue", DataTypes.STRING_TYPE));
+    functions.add(new LibraryFunction("add_to_ignore_list", DataTypes.BOOLEAN_TYPE, params));
+
+    params = List.of(namedParam("playerValue", DataTypes.INT_TYPE));
+    functions.add(new LibraryFunction("add_to_ignore_list", DataTypes.BOOLEAN_TYPE, params));
+
+    params = List.of(namedParam("playerIdValues", DataTypes.VARARG_INT_TYPE));
+    functions.add(new LibraryFunction("remove_from_ignore_list", DataTypes.BOOLEAN_TYPE, params));
 
     // Quest handling functions.
 
@@ -9828,6 +9841,62 @@ public abstract class RuntimeLibrary {
     String playerId = playerIdValue.toIntValue().toString();
 
     return new Value(ContactManager.getPlayerName(playerId, true));
+  }
+
+  /** Who is on your ignore list, by player id, since that is the identity KoL keeps it under. */
+  public static Value ignore_list(ScriptRuntime controller) {
+    RequestThread.postRequest(new ContactListRequest());
+
+    MapValue value = new MapValue(DataTypes.INT_TO_STRING_TYPE);
+
+    for (Entry<String, String> entry : ContactManager.getIgnoredPlayers().entrySet()) {
+      value.aset(new Value(StringUtilities.parseInt(entry.getKey())), new Value(entry.getValue()));
+    }
+
+    return value;
+  }
+
+  /**
+   * Adds by name or by player id: the form's field takes either, so both overloads are the one
+   * request with a different field value, and they share this method.
+   */
+  public static Value add_to_ignore_list(ScriptRuntime controller, final Value playerValue) {
+    String player = playerValue.toString();
+
+    RequestThread.postRequest(ContactListRequest.addToIgnoreList(player));
+
+    // The response is the page, so everybody it lists has just been registered and a name can be
+    // turned into the id the list is keyed by. An id passed in is not a name anybody has, so it
+    // comes back as itself.
+    return DataTypes.makeBooleanValue(
+        ContactManager.isIgnoredPlayer(ContactManager.getPlayerId(player)));
+  }
+
+  /**
+   * Takes ids, because that is all {@code pids[]} accepts -- unlike adding, which takes either. An
+   * entry belongs to a player rather than to the name they had when it was made, so a caller
+   * holding only a name looks the id up in {@code ignore_list()}.
+   *
+   * <p>As many as you like, in the one request, because that is what the form's check-all button
+   * submits. Adding is one at a time for the same reason: its field takes a single player.
+   */
+  public static Value remove_from_ignore_list(
+      ScriptRuntime controller, final Value playerIdValues) {
+    ArrayValue values = (ArrayValue) playerIdValues;
+
+    List<String> playerIds = new ArrayList<>();
+    for (int i = 0; i < values.count(); ++i) {
+      playerIds.add(values.aref(new Value(i)).toIntValue().toString());
+    }
+
+    if (playerIds.isEmpty()) {
+      return DataTypes.TRUE_VALUE;
+    }
+
+    RequestThread.postRequest(ContactListRequest.removeFromIgnoreList(playerIds));
+
+    return DataTypes.makeBooleanValue(
+        playerIds.stream().noneMatch(ContactManager::isIgnoredPlayer));
   }
 
   // Quest completion functions.
