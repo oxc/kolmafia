@@ -1,7 +1,9 @@
 package net.sourceforge.kolmafia.session;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import net.java.dev.spellcast.utilities.LockableListModel;
@@ -22,6 +24,9 @@ public class ContactManager {
   private static final HashMap<String, String> seenPlayerNames = new HashMap<>();
 
   private static final SortedListModel<String> mailContacts = new SortedListModel<>();
+  // Player id to player name, in the order KoL lists them. Keyed by id because that is what the
+  // list is really about: the form removes by id, and a player who renames is still the same entry.
+  private static final Map<String, String> ignoredPlayers = new LinkedHashMap<>();
   private static final SortedListModel<HTMLListEntry> chatContacts = new SortedListModel<>();
 
   private static ContactListFrame contactsFrame = null;
@@ -30,6 +35,7 @@ public class ContactManager {
     seenPlayerIds.clear();
     seenPlayerNames.clear();
     mailContacts.clear();
+    ignoredPlayers.clear();
     chatContacts.clear();
   }
 
@@ -54,6 +60,32 @@ public class ContactManager {
 
   public static final void clearMailContacts() {
     ContactManager.mailContacts.clear();
+  }
+
+  /**
+   * Who is on your ignore list, by player id, as of the last time it was read.
+   *
+   * <p>These are what KoL last said, not a way to change it: nothing here reaches the game, and
+   * nothing but a visit to account_contactlist.php updates them, since KoL mentions the list
+   * nowhere else. {@link net.sourceforge.kolmafia.request.ContactListRequest} is what actually adds
+   * and removes.
+   */
+  public static final Map<String, String> getIgnoredPlayers() {
+    return Collections.unmodifiableMap(ContactManager.ignoredPlayers);
+  }
+
+  public static final boolean isIgnoredPlayer(final String playerId) {
+    return ContactManager.ignoredPlayers.containsKey(playerId);
+  }
+
+  public static final void clearIgnoredPlayers() {
+    ContactManager.ignoredPlayers.clear();
+  }
+
+  /** Records that KoL lists this player as ignored. Ignoring them is the request's job. */
+  public static final void addIgnoredPlayer(final String playerName, final String playerId) {
+    ContactManager.registerPlayerId(playerName, playerId);
+    ContactManager.ignoredPlayers.put(playerId, playerName);
   }
 
   /**
@@ -88,11 +120,16 @@ public class ContactManager {
   public static final void addMailContact(String playerName, final String playerId) {
     ContactManager.registerPlayerId(playerName, playerId);
 
-    playerName = playerName.toLowerCase().replaceAll("[^0-9A-Za-z_ ]", "");
+    playerName = ContactManager.canonicalName(playerName);
 
     if (!ContactManager.mailContacts.contains(playerName)) {
-      ContactManager.mailContacts.add(playerName.toLowerCase());
+      ContactManager.mailContacts.add(playerName);
     }
+  }
+
+  /** How a player name is held in these lists: lowercase, and without KoL's decoration. */
+  private static String canonicalName(final String playerName) {
+    return playerName.toLowerCase().replaceAll("[^0-9A-Za-z_ ]", "");
   }
 
   /**
