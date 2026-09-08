@@ -45,6 +45,7 @@ turned them down.
 - `chore: print Stack on ScriptExceptions`
 - `feat: include function name in Exception message`
 - `feat: add search_mall library function`
+- `feat: read and change the ignore list`
 - `feat: add library commands to start/stop chat`
 - `feat: add thread and message passing support for scripts`
 - `feat: pass messageDate to chatbotScript`
